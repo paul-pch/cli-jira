@@ -1,0 +1,56 @@
+[project]
+name = "cli-jira"
+version = "0.1.0"
+description = "A template for Python CLI applications"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "typer>=0.3.0",
+    "rich>=10.0.0"
+]
+
+[project.scripts]
+jira = "app.main:app"
+
+
+# pyproject.toml
+
+[tool.ruff]
+line-length = 130
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "D100",  # missing module docstring
+  "D101",  # missing class docstring
+  "D102",  # missing method docstring
+  "D103",  # missing function docstring
+  "D104",  # missing package docstring
+  "D105",  # missing magic method docstring
+  "D106",  # missing nested class docstring
+  "D107"   # missing __init__ docstring
+]
+fixable = ["ALL"]
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+docstring-code-format = true
