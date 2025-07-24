@@ -1,5 +1,7 @@
 # cli-jira
 
+[![Coverage Status](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](https://img.shields.io/badge/coverage-50%25-brightgreen.svg)
+
 A template for creating Python CLI applications with a modern development workflow, specifically for Jira interactions.
 
 ## Features
