@@ -1,11 +1,6 @@
-import logging
-from logging import getLogger
-
 import typer
 from jira import JIRA
-
-logger = getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+from rich import print as rprint
 
 app = typer.Typer()
 
@@ -30,13 +25,13 @@ def get_jira_projects(
         projects = jira.projects()
 
         # Display projects
-        logger.info("Available Jira Projects:")
-        logger.info("-" * 30)
+        rprint("Available Jira Projects:")
+        rprint("-" * 30)
         for project in projects:
-            logger.info("• %s: %s", project.key, project.name)
+            rprint(f"• {project.key}: {project.name}")
 
-    except Exception:
-        logger.exception("Error connecting to Jira")
+    except (ConnectionError, TimeoutError, PermissionError) as e:
+        rprint(f"Error connecting to Jira: {e}")
         return
 
 

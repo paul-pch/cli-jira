@@ -47,7 +47,7 @@ ignore = [
   "D107",  # missing __init__ docstring
   "S101",  # use of assert detected (allowed in tests)
   "D211",  # no-blank-line-before-class
-  "D213"   # multi-line-summary-second-line
+  "D213",  # multi-line-summary-second-line
 ]
 fixable = ["ALL"]
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
