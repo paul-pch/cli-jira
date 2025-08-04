@@ -51,7 +51,7 @@ integrate:
 # Clean
 .PHONY: clean
 clean:
-	rm -rf dist build *.egg-info
+	rm -rf dist build *.egg-info coverage-report .coverage .pytest_cache **/__pycache__
 	@echo "Build artifacts removed"
 
 # Default target
