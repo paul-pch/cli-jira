@@ -1,25 +1,12 @@
 # cli-jira
 
-[![Coverage Status](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](https://img.shields.io/badge/coverage-50%25-brightgreen.svg)
-
-A template for creating Python CLI applications with a modern development workflow, specifically for Jira interactions.
-
-## Features
-
-- Python CLI application using [Typer](https://typer.tiangolo.com/)
-- Virtual environment management with Makefile
-- Testing with pytest and coverage
-- Executable building with PyInstaller
-- Project metadata in pyproject.toml
-- Automated development workflow with Makefile targets
-
 ## Installation
 
 To install **cli-python-starter**, clone the repository and install the dependencies:
 
 ```bash
-cd cli-jira
-make install
+# Creates venv, install dependencies, build binary, add it to path
+make
 ```
 
 ## Usage

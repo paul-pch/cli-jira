@@ -1,7 +1,7 @@
 import typer
 
-from app import list
-from utils import get_jira_client
+from app import lists
+from app.utils.utils import get_jira_client
 
 app = typer.Typer(help="CLI jira for ops")
 
@@ -12,7 +12,7 @@ def main(ctx: typer.Context) -> None:
     ctx.obj = get_jira_client()
 
 
-app.add_typer(list.app, name="list")
+app.add_typer(lists.app, name="list")
 
 if __name__ == "__main__":
     app()
