@@ -3,7 +3,8 @@ from types import SimpleNamespace
 
 import pytest
 
-import utils
+from app import utils
+from app.utils.exceptions import MissingEnvVarError
 
 
 class TestUtils:
@@ -25,7 +26,7 @@ class TestUtils:
         os.environ.pop("JIRA_TOKEN", None)
         os.environ["JIRA_EMAIL"] = "user@example.com"
 
-        with pytest.raises(utils.MissingEnvVarError) as exc_info:
+        with pytest.raises(MissingEnvVarError) as exc_info:
             utils.check_required_env_vars()
 
         assert "Variables manquantes" in str(exc_info.value)

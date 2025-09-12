@@ -1,1 +1,0 @@
-JIRA_PROJECT = "ST"

@@ -1,36 +1,32 @@
 import os
-from types import SimpleNamespace
 
 import typer
 from jira import JIRA, JIRAError
 
-
-class MissingEnvVarError(Exception):
-    """Exception personnalisée pour les variables d'environnement manquantes."""
+from app.utils.exceptions import MissingEnvVarError
 
 
-def check_required_env_vars() -> SimpleNamespace:
+def check_required_env_vars() -> dict[str, str]:
     env_vars = {
-        "server": os.environ.get("JIRA_URL"),
-        "user": os.environ.get("JIRA_EMAIL"),
-        "token": os.environ.get("JIRA_TOKEN"),
+        "JIRA_URL": os.environ.get("JIRA_URL"),
+        "JIRA_EMAIL": os.environ.get("JIRA_EMAIL"),
+        "JIRA_TOKEN": os.environ.get("JIRA_TOKEN"),
     }
 
-    if missing := [k for k, v in env_vars.items() if not v]:
-        msg = f"Variables manquantes : {', '.join(missing)}"
-        raise MissingEnvVarError(msg)
-    return SimpleNamespace(**env_vars)
+    if missing := [k for k, v in env_vars.items() if v is None]:
+        raise MissingEnvVarError(missing)
+    return env_vars
 
 
-def get_jira_client() -> JIRA:
+def get_jira_client(required_envs: dict[str, str]) -> JIRA:
     try:
-        required = check_required_env_vars()
-        return JIRA(basic_auth=(required.user, required.token), server=required.server, timeout=1)
+        return JIRA(
+            basic_auth=(required_envs["JIRA_EMAIL"], required_envs["JIRA_TOKEN"]), server=required_envs["JIRA_URL"], timeout=1
+        )
 
     except JIRAError as e:
         typer.echo(f"Erreur : {e}", err=True)
         raise typer.Exit(code=1) from e
 
-    except MissingEnvVarError as e:
-        typer.echo(f"Erreur : {e}", err=True)
-        raise typer.Exit(code=1) from e
+def get_external_config()-> dict[str, str]:
+        

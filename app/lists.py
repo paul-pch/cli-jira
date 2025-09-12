@@ -2,16 +2,17 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from .config import JIRA_PROJECT
-
-app = typer.Typer(help="Manage projects")
+app = typer.Typer(help="List the ressources availables for the current user")
 console = Console()
 
 
 @app.command()
 def project(ctx: typer.Context) -> None:
+    """
+    List available projects
+    """
     try:
-        jira = ctx.obj
+        jira = ctx.obj.jira_client
         projects = jira.projects()
         table = Table("Code", "Nom")
         for project in projects:
@@ -25,18 +26,25 @@ def project(ctx: typer.Context) -> None:
 
 
 @app.command()
-def ticket(ctx: typer.Context) -> None:
+def issues(ctx: typer.Context) -> None:
+    """
+    List owned issues # TODO owed ou autre chose ?
+    """
     try:
-        jira = ctx.obj
+        jira = ctx.obj.jira_client
 
-        jql = f"project = {JIRA_PROJECT} AND status NOT IN (Closed, Resolved) ORDER BY created DESC"
+        jql = "assignee = currentUser() ORDER BY updated DESC"
+        # issues = jira.search_issues(jql, maxResults=50)  # TODO Utiliser la version maxResults de config
 
-        issues = jira.search_issues(jql_str=jql, startAt=0, maxResults=10, fields="key,summary,assignee,status,created")
-
+        issues = jira.search_issues(jql, startAt=0, maxResults=50, fields="key,summary,assignee,status,created")
+        console.print(issues)
         table = Table("Code", "Nom", "Statut", "Responsable")
         for issue in issues:
             table.add_row(
-                issue.key, issue.fields.summary, issue.fields.status.name, getattr(issue.fields.assignee, "displayName", "None")
+                issue.key,
+                issue.fields.summary,
+                issue.fields.status.name,
+                getattr(issue.fields.assignee, "displayName", "None"),
             )
 
         console.print(table)

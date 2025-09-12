@@ -8,7 +8,7 @@ PIP := $(VENV_BIN)/pip
 PYTHON_CMD := $(VENV_BIN)/python
 SOURCE_DIR := app
 
-.PHONY: venv install build integrate clean
+.PHONY: install build integrate clean
 
 default: venv install build integrate
 
