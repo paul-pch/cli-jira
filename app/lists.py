@@ -29,9 +29,15 @@ def issues(ctx: typer.Context) -> None:
     try:
         jira = ctx.obj.jira_client
 
-        jql = "assignee = currentUser() ORDER BY updated DESC"
+        closed_statuses = ctx.obj.config["default"]["definition_closed"]
+        status_closed_list_str = ", ".join(f'"{s}"' for s in closed_statuses)
+
+        jql = f"assignee = currentUser() AND status not in ({status_closed_list_str}) ORDER BY updated DESC"
         issues = jira.search_issues(
-            jql, startAt=0, maxResults=ctx.obj.config["default"]["max_result"], fields="key,summary,assignee,status,created",
+            jql,
+            startAt=0,
+            maxResults=ctx.obj.config["default"]["max_result"],
+            fields="key,summary,assignee,status,created",
         )
         table = Table("Code", "Nom", "Statut", "Responsable")
         for issue in issues:
