@@ -30,9 +30,9 @@ def issues(ctx: typer.Context) -> None:
         jira = ctx.obj.jira_client
 
         jql = "assignee = currentUser() ORDER BY updated DESC"
-
-        issues = jira.search_issues(jql, startAt=0, maxResults=50, fields="key,summary,assignee,status,created")
-        console.print(issues)
+        issues = jira.search_issues(
+            jql, startAt=0, maxResults=ctx.obj.config["default"]["max_result"], fields="key,summary,assignee,status,created",
+        )
         table = Table("Code", "Nom", "Statut", "Responsable")
         for issue in issues:
             table.add_row(
