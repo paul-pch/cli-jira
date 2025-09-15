@@ -1,9 +1,8 @@
 import os
-from types import SimpleNamespace
 
 import pytest
 
-from app import utils
+from app.utils import utils
 from app.utils.exceptions import MissingEnvVarError
 
 
@@ -15,10 +14,9 @@ class TestUtils:
         os.environ["JIRA_TOKEN"] = "secrettoken"  # noqa: S105
 
         result = utils.check_required_env_vars()
-        assert isinstance(result, SimpleNamespace)
-        assert result.server == "https://jira.example.com"
-        assert result.user == "user@example.com"
-        assert result.token
+        assert result["server"] == "https://jira.example.com"
+        assert result["user"] == "user@example.com"
+        assert result["token"]
 
     @staticmethod
     def test_check_required_env_vars_missing() -> None:

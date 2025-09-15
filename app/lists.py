@@ -8,9 +8,7 @@ console = Console()
 
 @app.command()
 def project(ctx: typer.Context) -> None:
-    """
-    List available projects
-    """
+    """List available projects."""
     try:
         jira = ctx.obj.jira_client
         projects = jira.projects()
@@ -27,14 +25,11 @@ def project(ctx: typer.Context) -> None:
 
 @app.command()
 def issues(ctx: typer.Context) -> None:
-    """
-    List owned issues # TODO owed ou autre chose ?
-    """
+    """List owned issues."""
     try:
         jira = ctx.obj.jira_client
 
         jql = "assignee = currentUser() ORDER BY updated DESC"
-        # issues = jira.search_issues(jql, maxResults=50)  # TODO Utiliser la version maxResults de config
 
         issues = jira.search_issues(jql, startAt=0, maxResults=50, fields="key,summary,assignee,status,created")
         console.print(issues)

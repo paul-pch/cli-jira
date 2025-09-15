@@ -18,6 +18,8 @@ ignore = [
   "D211",  # no-blank-line-before-class
   "D213",  # multi-line-summary-second-line
   "CPY001", # missing-copyright-notice
+  "FBT001", # boolean-type-hint-positional-argument
+  "FBT003", # boolean-positional-value-in-call
 ]
 fixable = ["ALL"]
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"

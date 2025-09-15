@@ -10,9 +10,7 @@ console = Console()
 
 @app.command()
 def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The code of the issue")]) -> None:
-    """
-    Get a specific issue
-    """
+    """Get a specific issue."""
     try:
         jira = ctx.obj.jira_client
 

@@ -1,0 +1,5 @@
+[default]
+project = "ST"
+max_result = 50
+user = "admin"
+definition_closed = ["Terminé", "Livré", "Fermé(e)"]
