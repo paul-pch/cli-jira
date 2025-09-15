@@ -8,13 +8,14 @@ from app.utils.exceptions import MissingEnvVarError
 
 def check_required_env_vars() -> dict[str, str]:
     env_vars = {
-        "server": os.environ.get("JIRA_URL"),
-        "user": os.environ.get("JIRA_EMAIL"),
-        "token": os.environ.get("JIRA_TOKEN"),
+        "server": os.environ.get("JIRA_URL", ""),
+        "user": os.environ.get("JIRA_EMAIL", ""),
+        "token": os.environ.get("JIRA_TOKEN", ""),
     }
 
-    if missing := [k for k, v in env_vars.items() if v is None]:
+    if missing := [k for k, v in env_vars.items() if not v]:
         raise MissingEnvVarError(missing)
+
     return env_vars
 
 
