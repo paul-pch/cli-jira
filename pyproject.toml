@@ -21,6 +21,8 @@ ignore = [
   "FBT001", # boolean-type-hint-positional-argument
   "FBT003", # boolean-positional-value-in-call
   "DOC501", # docstring-missing-exception
+  "UP045", # non-pep604-annotation-optional
+  "PLR0913", # Too many arguments in function definition
 ]
 fixable = ["ALL"]
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"

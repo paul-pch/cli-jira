@@ -20,6 +20,8 @@ python -m main get projects
 ## Todo
 
 * [ ] GET - Afficher la description dans un ticket
+* [ ] CREATE - Ajouter le currentUser en assignee
+* [ ] GET - Ajouter une option --all pour avoir tous les tickets et pas que ceux du currentuser
 
 
 ## Development
