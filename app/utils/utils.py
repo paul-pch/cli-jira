@@ -9,6 +9,7 @@ from app.utils.exceptions import MissingEnvVarError
 
 console = Console()
 
+
 def check_required_env_vars() -> dict[str, str]:
     env_vars = {
         "server": os.environ.get("JIRA_URL", ""),
@@ -31,12 +32,13 @@ def get_jira_client(required_envs: dict[str, str]) -> JIRA:
         raise typer.Exit(code=1) from e
 
 
-def print_issue(issue: Issue) -> None:
+def display_issues(issues: list[Issue]) -> None:
     table = Table("Code", "Nom", "Statut", "Responsable")
-    table.add_row(
-        issue.key,
-        issue.fields.summary,
-        issue.fields.status.name,
-        getattr(issue.fields.assignee, "displayName", "None"),
-    )
+    for issue in issues:
+        table.add_row(
+            issue.key,
+            issue.fields.summary,
+            issue.fields.status.name,
+            getattr(issue.fields.assignee, "displayName", "None"),
+        )
     console.print(table)

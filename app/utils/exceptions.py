@@ -5,6 +5,7 @@ class MissingEnvVarError(Exception):
         self.missing = missing
         super().__init__(f"Variables manquantes : {', '.join(missing)}")
 
+
 class InvalidJiraStatusError(Exception):
     """Exception personnalisée pour les status des tickets jira."""
 

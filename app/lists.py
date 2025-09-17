@@ -1,6 +1,13 @@
+from typing import TYPE_CHECKING
+
 import typer
 from rich.console import Console
 from rich.table import Table
+
+from app.utils.utils import display_issues
+
+if TYPE_CHECKING:
+    from jira import Issue
 
 app = typer.Typer(help="List the ressources availables for the current user")
 console = Console()
@@ -33,22 +40,16 @@ def issues(ctx: typer.Context) -> None:
         status_closed_list_str = ", ".join(f'"{s}"' for s in closed_statuses)
 
         jql = f"assignee = currentUser() AND status not in ({status_closed_list_str}) ORDER BY updated DESC"
-        issues = jira.search_issues(
+
+        issues: list[Issue] = jira.search_issues(
             jql,
             startAt=0,
             maxResults=ctx.obj.config["default"]["max_result"],
             fields="key,summary,assignee,status,created",
         )
-        table = Table("Code", "Nom", "Statut", "Responsable")
-        for issue in issues:
-            table.add_row(
-                issue.key,
-                issue.fields.summary,
-                issue.fields.status.name,
-                getattr(issue.fields.assignee, "displayName", "None"),
-            )
 
-        console.print(table)
+        display_issues(issues)
+
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
         raise typer.Exit(code=1) from e

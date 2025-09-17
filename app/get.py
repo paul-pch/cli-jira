@@ -1,9 +1,12 @@
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 from rich.console import Console
 
-from app.utils.utils import print_issue
+from app.utils.utils import display_issues
+
+if TYPE_CHECKING:
+    from jira import Issue
 
 app = typer.Typer(help="Get a specific ressource")
 console = Console()
@@ -15,9 +18,9 @@ def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The
     try:
         jira = ctx.obj.jira_client
 
-        issue = jira.issue(issue_key, fields="key,summary,assignee,status,created")
+        issue: Issue = jira.issue(issue_key, fields="key,summary,assignee,status,created")
 
-        print_issue(issue)
+        display_issues([issue])
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)

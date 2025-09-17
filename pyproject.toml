@@ -23,6 +23,7 @@ ignore = [
   "DOC501", # docstring-missing-exception
   "UP045", # non-pep604-annotation-optional
   "PLR0913", # Too many arguments in function definition
+  "PLR0917", # too-many-positional-arguments
 ]
 fixable = ["ALL"]
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"

@@ -1,9 +1,12 @@
-from typing import Annotated, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Optional
 
 import typer
 from rich.console import Console
 
-from app.utils.utils import print_issue
+from app.utils.utils import display_issues
+
+if TYPE_CHECKING:
+    from jira import Issue
 
 app = typer.Typer(help="Create a specific ressource")
 console = Console()
@@ -36,7 +39,7 @@ def issue(
         if not project:
             project = ctx.obj.config["default"]["project"]
 
-        fields: dict = {
+        fields: dict[str, Any] = {
             "project": {"key": project},
             "summary": title,
             "description": description,
@@ -44,8 +47,8 @@ def issue(
             "labels": labels,
         }
 
-        new_issue = jira.create_issue(fields=fields)
-        print_issue(new_issue)
+        new_issue: Issue = jira.create_issue(fields=fields)
+        display_issues([new_issue])
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)

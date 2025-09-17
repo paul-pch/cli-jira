@@ -1,10 +1,13 @@
-from typing import Annotated, Optional
+from typing import TYPE_CHECKING, Annotated, Optional
 
 import typer
 from rich.console import Console
 
 from app.utils.exceptions import InvalidJiraStatusError
-from app.utils.utils import print_issue
+from app.utils.utils import display_issues
+
+if TYPE_CHECKING:
+    from jira import Issue
 
 app = typer.Typer(help="Update a specific ressource")
 console = Console()
@@ -22,10 +25,9 @@ def issue(
         console.print("Nothing to update !", style="yellow")
         raise typer.Exit(code=1)
     try:
-
         jira = ctx.obj.jira_client
 
-        issue = jira.issue(key)
+        issue: Issue = jira.issue(key)
 
         if status:
             transitions = jira.transitions(issue)
@@ -41,7 +43,7 @@ def issue(
         if comment:
             jira.add_comment(issue, comment)
 
-        print_issue(issue)
+        display_issues([issue])
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
