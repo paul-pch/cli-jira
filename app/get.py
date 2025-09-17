@@ -2,7 +2,8 @@ from typing import Annotated
 
 import typer
 from rich.console import Console
-from rich.table import Table
+
+from app.utils.utils import print_issue
 
 app = typer.Typer(help="Get a specific ressource")
 console = Console()
@@ -16,15 +17,8 @@ def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The
 
         issue = jira.issue(issue_key, fields="key,summary,assignee,status,created")
 
-        table = Table("Code", "Nom", "Statut", "Responsable")
-        table.add_row(
-            issue.key,
-            issue.fields.summary,
-            issue.fields.status.name,
-            getattr(issue.fields.assignee, "displayName", "None"),
-        )
+        print_issue(issue)
 
-        console.print(table)
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
         raise typer.Exit(code=1) from e

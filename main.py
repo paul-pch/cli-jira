@@ -3,7 +3,7 @@ from pathlib import Path
 import tomllib
 import typer
 
-from app import create, get, lists
+from app import create, get, lists, update
 from app.utils import utils
 from app.utils.app_state import AppState
 
@@ -25,8 +25,10 @@ def main(ctx: typer.Context, verbose: bool = typer.Option(False, "--verbose", "-
 
 
 app.add_typer(create.app, name="create")
-app.add_typer(lists.app, name="list")
 app.add_typer(get.app, name="get")
+app.add_typer(lists.app, name="list")
+app.add_typer(update.app, name="update")
+
 
 if __name__ == "__main__":
     app()

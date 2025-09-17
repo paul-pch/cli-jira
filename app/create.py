@@ -3,6 +3,8 @@ from typing import Annotated, Optional
 import typer
 from rich.console import Console
 
+from app.utils.utils import print_issue
+
 app = typer.Typer(help="Create a specific ressource")
 console = Console()
 
@@ -43,7 +45,7 @@ def issue(
         }
 
         new_issue = jira.create_issue(fields=fields)
-        console.print(new_issue)
+        print_issue(new_issue)
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)

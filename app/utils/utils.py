@@ -1,10 +1,13 @@
 import os
 
 import typer
-from jira import JIRA, JIRAError
+from jira import JIRA, Issue, JIRAError
+from rich.console import Console
+from rich.table import Table
 
 from app.utils.exceptions import MissingEnvVarError
 
+console = Console()
 
 def check_required_env_vars() -> dict[str, str]:
     env_vars = {
@@ -26,3 +29,14 @@ def get_jira_client(required_envs: dict[str, str]) -> JIRA:
     except JIRAError as e:
         typer.echo(f"Erreur : {e}", err=True)
         raise typer.Exit(code=1) from e
+
+
+def print_issue(issue: Issue) -> None:
+    table = Table("Code", "Nom", "Statut", "Responsable")
+    table.add_row(
+        issue.key,
+        issue.fields.summary,
+        issue.fields.status.name,
+        getattr(issue.fields.assignee, "displayName", "None"),
+    )
+    console.print(table)
