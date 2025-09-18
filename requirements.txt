@@ -1,7 +1,8 @@
-typer==0.16.0
 jira==3.10.5
-rich==14.1.0
-pytest==8.4.1
-pytest-cov==6.2.1
 pre-commit==4.2.0
+pyinstaller==6.10.0
+pytest-cov==6.2.1
+pytest==8.4.1
+rich==14.1.0
 ruff==0.12.7
+typer==0.16.0

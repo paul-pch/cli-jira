@@ -21,10 +21,12 @@ install: venv
 	@echo "Dependencies installed"
 
 build: install
-	pyinstaller --onefile --name=jira main.py
+	$(VENV_BIN)/pyinstaller --onefile --name=jira main.py
 	@echo "Application built"
 
 integrate:
+	mkdir -p ~/.config/jira/
+	cp -n config.toml ~/.config/jira/config.toml
 	grep -q '$(CURDIR)' ~/.zshrc || echo 'export PATH=$(CURDIR)/dist:$$PATH' >> ~/.zshrc
 	@echo "Application integrated into PATH"
 	@echo "-> Please reload your terminal"

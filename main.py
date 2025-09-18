@@ -14,7 +14,7 @@ app = typer.Typer(help="CLI jira for ops")
 def main(ctx: typer.Context, verbose: bool = typer.Option(False, "--verbose", "-v")) -> None:
     """Injecte le client JIRA dans le contexte."""
     env_vars = utils.check_required_env_vars()
-    with Path("config.toml").open("rb") as f:
+    with Path(utils.find_config()).open("rb") as f:
         local_config = tomllib.load(f)
 
     ctx.obj = AppState(

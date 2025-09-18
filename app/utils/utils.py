@@ -42,3 +42,16 @@ def display_issues(issues: list[Issue]) -> None:
             getattr(issue.fields.assignee, "displayName", "None"),
         )
     console.print(table)
+
+
+def find_config() -> str:
+    candidates = [
+        os.path.join(os.getcwd(), "config.toml"),  # dossier courant
+        os.path.expanduser("~/.config/jira/config.toml"),  # config user
+        "/etc/jira/config.toml",  # config système
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    error_msg = "config.toml introuvable"
+    raise FileNotFoundError(error_msg)
