@@ -15,7 +15,10 @@ console = Console()
 
 @app.command()
 def project(ctx: typer.Context) -> None:
-    """List available projects."""
+    """List available projects.
+
+    Example: jira list project
+    """
     try:
         jira = ctx.obj.jira_client
         projects = jira.projects()
@@ -32,7 +35,10 @@ def project(ctx: typer.Context) -> None:
 
 @app.command()
 def issues(ctx: typer.Context) -> None:
-    """List owned issues."""
+    """List owned issues.
+
+    Example: jira list issues
+    """
     try:
         jira = ctx.obj.jira_client
 

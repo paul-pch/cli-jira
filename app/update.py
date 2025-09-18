@@ -20,7 +20,10 @@ def issue(
     status: Annotated[Optional[str], typer.Option(help="New status to update. Example : 'EN COURS DE REVUE'")] = None,
     comment: Annotated[Optional[str], typer.Option(help="Comment to add")] = None,
 ) -> None:
-    """Update an issue."""
+    """Update an issue.
+
+    Example: jira update issue ST-1060 --status 'TERMINÉ'
+    """
     if not status and not comment:
         console.print("Nothing to update !", style="yellow")
         raise typer.Exit(code=1)

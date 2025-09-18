@@ -27,7 +27,10 @@ def issue(
         typer.Option(help="Labels assigned to the issue. Default value in config.toml"),
     ] = None,
 ) -> None:
-    """Create an issue."""
+    """Create an issue.
+
+    Example: jira create issue <title> --labels <text>
+    """
     try:
         jira = ctx.obj.jira_client
 
@@ -39,12 +42,16 @@ def issue(
         if not project:
             project = ctx.obj.config["default"]["project"]
 
+        # Compte lié au token jira
+        account_id = jira.myself()["accountId"]
+
         fields: dict[str, Any] = {
             "project": {"key": project},
             "summary": title,
             "description": description,
             "issuetype": {"name": issuetype},
             "labels": labels,
+            "assignee": {"id": account_id},
         }
 
         new_issue: Issue = jira.create_issue(fields=fields)
