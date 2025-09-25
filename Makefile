@@ -8,7 +8,7 @@ PIP := $(VENV_BIN)/pip
 PYTHON_CMD := $(VENV_BIN)/python
 SOURCE_DIR := app
 
-.PHONY: install build integrate clean
+.PHONY: install build integrate clean upgrade
 
 default: venv install build integrate
 
@@ -21,7 +21,8 @@ install: venv
 	@echo "Dependencies installed"
 
 build: install
-	$(VENV_BIN)/pyinstaller --onefile --name=jira main.py
+# 	--exclude-module pkg_resources à retirer quand la lib sera mise à jour
+	$(VENV_BIN)/pyinstaller --exclude-module pkg_resources --onefile --name=jira main.py
 	@echo "Application built"
 
 integrate:
