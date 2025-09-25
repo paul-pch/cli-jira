@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Annotated
 import typer
 from rich.console import Console
 
-from app.utils.utils import display_issues
+from app.utils.utils import display_issues, display_transitions
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -28,3 +28,16 @@ def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
         raise typer.Exit(code=1) from e
+
+@app.command()
+def status(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The code of the issue")]) -> None:
+    """Get available transitions for a specific issue.
+
+    Example: jira get status ST-1060
+    """
+    jira = ctx.obj.jira_client
+    issue: Issue = jira.issue(issue_key)
+    transitions = jira.transitions(issue)
+    transitions = (s["name"] for s in transitions)
+
+    display_transitions(transitions, issue.fields.issuetype.name)

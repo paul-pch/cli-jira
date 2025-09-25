@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import typer
 from jira import JIRA, Issue, JIRAError
@@ -43,15 +44,23 @@ def display_issues(issues: list[Issue]) -> None:
         )
     console.print(table)
 
+def display_transitions(transitions: list[str], issue_type: str) -> None:
+    table = Table(issue_type)
+    for transition in transitions:
+        table.add_row(
+            transition,
+        )
+    console.print(table)
+
 
 def find_config() -> str:
     candidates = [
-        os.path.join(os.getcwd(), "config.toml"),  # dossier courant
-        os.path.expanduser("~/.config/jira/config.toml"),  # config user
-        "/etc/jira/config.toml",  # config système
+        f"{Path.cwd()}/config.toml",
+        Path("~/.config/jira/config.toml").expanduser(),
+        "/etc/jira/config.toml",
     ]
     for path in candidates:
-        if os.path.exists(path):
+        if Path(path).exists():
             return path
     error_msg = "config.toml introuvable"
     raise FileNotFoundError(error_msg)
