@@ -31,6 +31,14 @@ integrate:
 	@echo "Application integrated into PATH"
 	@echo "-> Please reload your terminal"
 
+upgrade: venv
+	@echo "Checking for outdated packages..."
+	$(PIP) list --outdated
+	@echo "Upgrading packages..."
+	$(PIP) install --upgrade -r requirements.txt
+	@echo "Verifying dependencies..."
+	$(PIP) check
+	@echo "Upgrading complete. All dependencies are verified."
 clean:
 	rm -rf dist build *.egg-info coverage-report .coverage .pytest_cache **/__pycache__ jira.spec
 	rm -rf venv
