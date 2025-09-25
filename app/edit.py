@@ -9,7 +9,7 @@ from app.utils.utils import display_issues
 if TYPE_CHECKING:
     from jira import Issue
 
-app = typer.Typer(help="Update a specific ressource")
+app = typer.Typer(help="Edit a specific ressource")
 console = Console()
 
 
@@ -17,12 +17,15 @@ console = Console()
 def issue(
     ctx: typer.Context,
     key: Annotated[str, typer.Argument(help="Title")],
-    status: Annotated[Optional[str], typer.Option(help="New status to update. Example : 'EN COURS DE REVUE'")] = None,
+    status: Annotated[
+        Optional[str],
+        typer.Option(help="New status to update. Example : 'EN COURS DE REVUE'"),
+    ] = None,
     comment: Annotated[Optional[str], typer.Option(help="Comment to add")] = None,
 ) -> None:
-    """Update an issue.
+    """Edit an issue.
 
-    Example: jira update issue ST-1060 --status 'TERMINÉ'
+    Example: jira edit issue ST-1060 --status 'TERMINÉ'
     """
     if not status and not comment:
         console.print("Nothing to update !", style="yellow")

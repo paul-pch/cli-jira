@@ -44,6 +44,7 @@ def display_issues(issues: list[Issue]) -> None:
         )
     console.print(table)
 
+
 def display_transitions(transitions: list[str], issue_type: str) -> None:
     table = Table(issue_type)
     for transition in transitions:
