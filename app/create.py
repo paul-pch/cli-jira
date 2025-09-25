@@ -37,6 +37,9 @@ def issue(
         if not issuetype:
             issuetype = ctx.obj.config["default"]["issue_type"]
 
+        if not labels:
+            labels = []
+
         labels += ctx.obj.config["default"]["labels"]
 
         if not project:
