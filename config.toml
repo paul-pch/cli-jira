@@ -1,6 +1,6 @@
 [default]
 project = "ST"
-issue_type = "Story"
+issue_type = "Story Technique"
 max_result = 50
 user = "admin"
 definition_closed = ["Terminé", "Livré", "Fermé(e)"]
