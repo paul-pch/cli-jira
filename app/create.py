@@ -26,6 +26,10 @@ def issue(
         Optional[list[str]],
         typer.Option(help="Labels assigned to the issue. Default value in config.toml"),
     ] = None,
+    owned: Annotated[
+        Optional[bool],
+        typer.Option(help="Presise if the issue is owned by the current author"),
+    ] = True,
 ) -> None:
     """Create an issue.
 
@@ -45,8 +49,9 @@ def issue(
         if not project:
             project = ctx.obj.config["default"]["project"]
 
-        # Compte lié au token jira
-        account_id = jira.myself()["accountId"]
+        if owned:
+            # Compte lié au token jira
+            account_id = jira.myself()["accountId"]
 
         fields: dict[str, Any] = {
             "project": {"key": project},

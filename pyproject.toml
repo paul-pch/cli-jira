@@ -26,6 +26,7 @@ ignore = [
   "S101",  # use of assert detected (allowed in tests)
   "UP045", # non-pep604-annotation-optional
   "PLR6301", # Method could be a function, class method, or static methodRuff
+  "FBT002", # boolean-default-value-positional-argument
 ]
 fixable = ["ALL"]
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
