@@ -30,6 +30,10 @@ def issue(
         Optional[bool],
         typer.Option(help="Presise if the issue is owned by the current author"),
     ] = True,
+    parent: Annotated[
+        Optional[str],
+        typer.Option(help="Key of the parent issue (e.g., PROJ-123)"),
+    ] = None,
 ) -> None:
     """Create an issue.
 
@@ -49,18 +53,21 @@ def issue(
         if not project:
             project = ctx.obj.config["default"]["project"]
 
-        if owned:
-            # Compte lié au token jira
-            account_id = jira.myself()["accountId"]
-
         fields: dict[str, Any] = {
             "project": {"key": project},
             "summary": title,
             "description": description,
             "issuetype": {"name": issuetype},
             "labels": labels,
-            "assignee": {"id": account_id},
         }
+
+        if parent:
+            fields["parent"] = {"key": parent}
+
+        if owned:
+            # Compte lié au token jira
+            account_id = jira.myself()["accountId"]
+            fields["assignee"] = {"id": account_id}
 
         new_issue: Issue = jira.create_issue(fields=fields)
         display_issues([new_issue])
