@@ -20,9 +20,12 @@ python -m main get projects
 ## Todo
 
 * [ ] GET - Afficher la description dans un ticket
+* [ ] GET - Afficher un ticket de manière plus complète
 * [ ] GET - Ajouter une option --all pour avoir tous les tickets et pas que ceux du currentuser
 * [ ] GET - Récupérer la liste des status disponibles pour un type de ticket
 * [ ] CREATE - Passer le status du ticket directement à la création
+* [ ] UPDATE - Editer la liste des labels partielle ou entière
+* [ ] UPDATE - Pouvoir passer un ticket dans un status "terminé" ou équivalent facilement
 
 
 ## Development
