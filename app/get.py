@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Optional
 
 import typer
 from rich.console import Console
@@ -89,3 +89,31 @@ def status(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="Th
     jira = ctx.obj.jira_client
     issue: Issue = jira.issue(issue_key)
     display_transitions(get_transitions_from_issue(ctx, issue), issue.fields.issuetype.name)
+
+
+@app.command()
+def users(
+    ctx: typer.Context,
+    query: Annotated[Optional[str], typer.Option(help="A string to match usernames, name or email against.")] = "%",
+) -> None:
+    """List users for current project.
+
+    Default jira maxResults = 50
+    Example: jira get users --query michel
+    """
+    try:
+        jira = ctx.obj.jira_client
+        users = jira.search_users(query=f"{query}")
+
+        if not users:
+            console.print("No user found.", style="yellow")
+            raise typer.Exit(code=1)
+
+        table = Table("Fullname", "account_id")
+        for u in users:
+            table.add_row(u.displayName, u.accountId)
+        console.print(table)
+
+    except (ConnectionError, TimeoutError, PermissionError) as e:
+        typer.echo(f"Erreur : {e}", err=True)
+        raise typer.Exit(code=1) from e

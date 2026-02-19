@@ -30,6 +30,10 @@ def issue(
         Optional[bool],
         typer.Option(help="Presise if the issue is owned by the current author"),
     ] = True,
+    owner: Annotated[
+        Optional[str],
+        typer.Option(help="The onwer of the issue (override --owned)"),
+    ] = None,
     parent: Annotated[
         Optional[str],
         typer.Option(help="Key of the parent issue (e.g., PROJ-123)"),
@@ -68,6 +72,18 @@ def issue(
             # Compte lié au token jira
             account_id = jira.myself()["accountId"]
             fields["assignee"] = {"id": account_id}
+
+        if owner:
+            users = jira.search_users(query=f"{owner}")
+            if len(users) == 1:
+                fields["assignee"] = {"id": users[0].accountId}
+            elif len(users) > 1:
+                console.print("Too many users found", style="yellow")
+                console.print("Try `jira get users --query michel`")
+                raise typer.Exit(code=1)
+            else:
+                console.print("User not found", style="yellow")
+                raise typer.Exit(code=1)
 
         new_issue: Issue = jira.create_issue(fields=fields)
         display_issues([new_issue])

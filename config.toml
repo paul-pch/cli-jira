@@ -3,5 +3,5 @@ project = "ST"
 issue_type = "Story Technique"
 max_result = 50
 user = "admin"
-definition_closed = ["Terminé", "Livré", "Fermé(e)"]
+definition_closed = ["Terminé", "Livré", "Fermé(e)", "Validé"]
 labels = []
