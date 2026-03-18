@@ -23,7 +23,7 @@ def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The
     try:
         jira = ctx.obj.jira_client
 
-        issue: Issue = jira.issue(issue_key, fields="key,description,summary,assignee,status,created")
+        issue: Issue = jira.issue(issue_key, fields="key,description,summary,assignee,status,created,labels")
 
         utils.display_issue(issue)
 

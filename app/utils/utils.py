@@ -44,10 +44,12 @@ def display_issue(issue: Issue) -> None:
     meta.add_column()
 
     assignee = fields.assignee.displayName if fields.assignee else "Unassigned"
+    labels = ", ".join(f'"{label}"' for label in fields.labels)
 
     meta.add_row("Key", issue.key)
     meta.add_row("Status", fields.status.name)
     meta.add_row("Assignee", assignee)
+    meta.add_row("Labels", labels)
     meta.add_row("Created", fields.created[:10])
 
     content = Markdown(format_description(fields.description)) if fields.description else "[italic]No description[/italic]"
