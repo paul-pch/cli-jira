@@ -4,7 +4,7 @@ import tomllib
 import typer
 
 from app import create, edit, get
-from app.utils import utils
+from app.utils import jira, utils
 from app.utils.app_state import AppState
 
 app = typer.Typer(help="CLI jira for ops")
@@ -19,7 +19,7 @@ def main(ctx: typer.Context, verbose: bool = typer.Option(False, "--verbose", "-
 
     ctx.obj = AppState(
         config={**env_vars, **local_config},
-        jira_client=utils.get_jira_client(env_vars),
+        jira_client=jira.get_jira_client(env_vars),
         verbose=verbose,
     )
 

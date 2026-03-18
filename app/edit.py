@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Annotated, Optional
 import typer
 from rich.console import Console
 
+from app.utils import display
 from app.utils.exceptions import InvalidJiraStatusError
-from app.utils.utils import display_issues
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -49,7 +49,7 @@ def issue(
         if comment:
             jira.add_comment(issue, comment)
 
-        display_issues([issue])
+        display.display_issue(issue)
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)

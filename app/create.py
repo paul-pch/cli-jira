@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Optional
 import typer
 from rich.console import Console
 
-from app.utils.utils import display_issues
+from app.utils import display
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -69,7 +69,7 @@ def issue(
             fields["parent"] = {"key": parent}
 
         if owned:
-            # Compte lié au token jira
+            # Jira token account
             account_id = jira.myself()["accountId"]
             fields["assignee"] = {"id": account_id}
 
@@ -86,7 +86,7 @@ def issue(
                 raise typer.Exit(code=1)
 
         new_issue: Issue = jira.create_issue(fields=fields)
-        display_issues([new_issue])
+        display.display_issue(new_issue)
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)

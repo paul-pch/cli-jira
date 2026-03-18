@@ -2,10 +2,9 @@ from typing import TYPE_CHECKING, Annotated, Optional
 
 import typer
 from rich.console import Console
-from rich.table import Table
 
-from app.utils import utils
-from app.utils.jira_utils import get_transitions_from_issue
+from app.utils import display
+from app.utils.jira import get_transitions_from_issue
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -25,7 +24,7 @@ def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The
 
         issue: Issue = jira.issue(issue_key, fields="key,description,summary,assignee,status,created,labels")
 
-        utils.display_issue(issue)
+        display.display_issue(issue)
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
@@ -53,7 +52,7 @@ def issues(ctx: typer.Context) -> None:
             fields="key,summary,assignee,status,created",
         )
 
-        utils.display_issues(issues)
+        display.display_issues(issues)
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
@@ -69,11 +68,8 @@ def project(ctx: typer.Context) -> None:
     try:
         jira = ctx.obj.jira_client
         projects = jira.projects()
-        table = Table("Code", "Nom")
-        for project in projects:
-            table.add_row(project.key, project.name)
 
-        console.print(table)
+        display.display_tuples(columns=["Code", "Name"], rows=[(p.key, p.name) for p in projects])
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
@@ -88,7 +84,7 @@ def status(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="Th
     """
     jira = ctx.obj.jira_client
     issue: Issue = jira.issue(issue_key)
-    utils.display_transitions(get_transitions_from_issue(ctx, issue), issue.fields.issuetype.name)
+    display.display_tuples(columns=[issue.fields.issuetype.name], rows=[(t,) for t in get_transitions_from_issue(ctx, issue)])
 
 
 @app.command()
@@ -109,10 +105,7 @@ def users(
             console.print("No user found.", style="yellow")
             raise typer.Exit(code=1)
 
-        table = Table("Fullname", "account_id")
-        for u in users:
-            table.add_row(u.displayName, u.accountId)
-        console.print(table)
+        display.display_tuples(columns=["Fullname", "account_id"], rows=[(u.displayName, u.accountId) for u in users])
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
