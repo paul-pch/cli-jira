@@ -19,7 +19,6 @@ python -m main get projects
 
 ## Todo
 
-* [ ] GET - Afficher la description dans un ticket
 * [ ] GET - Afficher un ticket de manière plus complète
 * [ ] GET - Ajouter une option --all pour avoir tous les tickets et pas que ceux du currentuser
 * [ ] GET - Récupérer la liste des status disponibles pour un type de ticket

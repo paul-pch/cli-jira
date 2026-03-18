@@ -4,8 +4,8 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from app.utils import utils
 from app.utils.jira_utils import get_transitions_from_issue
-from app.utils.utils import display_issues, display_transitions
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -23,9 +23,9 @@ def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The
     try:
         jira = ctx.obj.jira_client
 
-        issue: Issue = jira.issue(issue_key, fields="key,summary,assignee,status,created")
+        issue: Issue = jira.issue(issue_key, fields="key,description,summary,assignee,status,created")
 
-        display_issues([issue])
+        utils.display_issue(issue)
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
@@ -53,7 +53,7 @@ def issues(ctx: typer.Context) -> None:
             fields="key,summary,assignee,status,created",
         )
 
-        display_issues(issues)
+        utils.display_issues(issues)
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
@@ -88,7 +88,7 @@ def status(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="Th
     """
     jira = ctx.obj.jira_client
     issue: Issue = jira.issue(issue_key)
-    display_transitions(get_transitions_from_issue(ctx, issue), issue.fields.issuetype.name)
+    utils.display_transitions(get_transitions_from_issue(ctx, issue), issue.fields.issuetype.name)
 
 
 @app.command()
