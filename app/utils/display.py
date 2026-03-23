@@ -31,6 +31,7 @@ def display_issue(issue: Issue) -> None:
     labels = ", ".join(f'"{label}"' for label in fields.labels)
 
     meta.add_row("Key", issue.key)
+    meta.add_row("Type", fields.issuetype.name)
     meta.add_row("Status", fields.status.name)
     meta.add_row("Assignee", assignee)
     meta.add_row("Labels", labels)
@@ -43,7 +44,7 @@ def display_issue(issue: Issue) -> None:
     layout.add_column(ratio=1)
     layout.add_row(
         Panel(meta, title="Details"),
-        Panel(content, title="Description"),
+        Panel(content, title=fields.summary),
     )
 
     console.print(layout)
