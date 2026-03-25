@@ -1,3 +1,5 @@
+from typing import Any
+
 from jira import Issue
 from rich import box
 from rich.console import Console
@@ -20,7 +22,7 @@ def default_table() -> Table:
     )
 
 
-def display_issue(issue: Issue) -> None:
+def display_issue(issue: Issue, remote_links: list[Any] | None = None) -> None:
     fields = issue.fields
 
     meta = Table(box=box.SIMPLE, show_header=False, padding=(0, 0))
@@ -49,6 +51,13 @@ def display_issue(issue: Issue) -> None:
 
     console.print(layout)
 
+    if remote_links:
+        links_table = Table(box=box.SIMPLE, show_header=False, padding=(0, 0), expand=True)
+        links_table.add_column(style="bold")
+        links_table.add_column(style="dim")
+        for link in remote_links:
+            links_table.add_row(link.object.title, link.object.url)
+        console.print(Panel(links_table, title="Remote Links"))
 
 def display_issues(issues: list[Issue]) -> None:
     table = default_table()

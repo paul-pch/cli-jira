@@ -23,8 +23,9 @@ def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The
         jira = ctx.obj.jira_client
 
         issue: Issue = jira.issue(issue_key, fields="key,description,summary,issuetype,assignee,status,created,labels")
+        remote_links = jira.remote_links(issue_key)
 
-        display.display_issue(issue)
+        display.display_issue(issue, remote_links)
 
     except (ConnectionError, TimeoutError, PermissionError) as e:
         typer.echo(f"Erreur : {e}", err=True)
