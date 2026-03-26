@@ -2,7 +2,7 @@
 
 # Variables
 PYTHON := python3
-VENV_DIR := venv
+VENV_DIR := .venv
 VENV_BIN := $(VENV_DIR)/bin
 PIP := $(VENV_BIN)/pip
 PYTHON_CMD := $(VENV_BIN)/python
