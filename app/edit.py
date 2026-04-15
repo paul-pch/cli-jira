@@ -46,6 +46,8 @@ def issue(
                 raise InvalidJiraStatusError(status)
             jira.transition_issue(issue, transition_id)
 
+        issue = jira.issue(key, fields="key,description,summary,issuetype,assignee,status,created,labels")
+
         if comment:
             jira.add_comment(issue, comment)
 

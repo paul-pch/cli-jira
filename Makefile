@@ -10,17 +10,17 @@ SOURCE_DIR := app
 
 .PHONY: install build integrate clean upgrade
 
-default: venv install build integrate
+default: install build integrate
 
-venv:
+.venv:
 	$(PYTHON) -m venv $(VENV_DIR)
 	@echo "Virtual environment created in $(VENV_DIR)"
 
-install: venv
+install:
 	$(PIP) install -r requirements.txt
 	@echo "Dependencies installed"
 
-build: install
+build:
 # 	--exclude-module pkg_resources à retirer quand la lib sera mise à jour
 	$(VENV_BIN)/pyinstaller --exclude-module pkg_resources --onefile --name=jira main.py
 	@echo "Application built"
@@ -32,7 +32,7 @@ integrate:
 	@echo "Application integrated into PATH"
 	@echo "-> Please reload your terminal"
 
-upgrade: venv
+upgrade:
 	@echo "Checking for outdated packages..."
 	$(PIP) list --outdated
 	@echo "Upgrading packages..."
@@ -42,5 +42,5 @@ upgrade: venv
 	@echo "Upgrading complete. All dependencies are verified."
 clean:
 	rm -rf dist build *.egg-info coverage-report .coverage .pytest_cache **/__pycache__ jira.spec
-	rm -rf venv
+	rm -rf .venv
 	@echo "Build artifacts removed"
