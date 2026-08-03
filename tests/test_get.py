@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+from jira.client import ResultList
+
 from main import app
 from tests.conftest import make_issue, runner
 
@@ -45,6 +47,44 @@ def test_issues(mock_jira_client: MagicMock) -> None:
     assert "ST-1" in result.output
     assert "ST-2" in result.output
     mock_jira_client.search_issues.assert_called_once()
+
+
+def test_issues_all(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.search_issues.return_value = [
+        make_issue(key="ST-1", summary="Premier ticket"),
+    ]
+
+    result = runner.invoke(app, ["get", "issues", "--all"])
+
+    assert result.exit_code == 0
+    jql = mock_jira_client.search_issues.call_args[0][0]
+    assert "currentUser()" not in jql
+    assert 'project = "ST"' in jql
+
+
+def test_issues_truncated_warns(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.search_issues.return_value = ResultList(
+        [make_issue(key="ST-1")],
+        _total=42,
+    )
+
+    result = runner.invoke(app, ["get", "issues"])
+
+    assert result.exit_code == 0
+    assert "tronqué" in result.output
+    assert "1 ticket(s) sur 42" in result.output
+
+
+def test_issues_not_truncated_no_warning(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.search_issues.return_value = ResultList(
+        [make_issue(key="ST-1")],
+        _total=1,
+    )
+
+    result = runner.invoke(app, ["get", "issues"])
+
+    assert result.exit_code == 0
+    assert "tronqué" not in result.output
 
 
 def test_status(mock_jira_client: MagicMock) -> None:

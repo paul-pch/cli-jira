@@ -28,5 +28,5 @@ class TestUtils:
             utils.check_required_env_vars()
 
         assert "Variables manquantes" in str(exc_info.value)
-        assert "server" in str(exc_info.value)
-        assert "token" in str(exc_info.value)
+        assert "JIRA_URL" in str(exc_info.value)
+        assert "JIRA_TOKEN" in str(exc_info.value)

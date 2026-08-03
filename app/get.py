@@ -31,17 +31,28 @@ def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The
 
 @app.command()
 @handle_jira_errors
-def issues(ctx: typer.Context) -> None:
-    """List owned issues.
+def issues(
+    ctx: typer.Context,
+    all_users: Annotated[
+        bool, typer.Option("--all", help="Récupérer les tickets de tous les utilisateurs, pas seulement les siens.")
+    ] = False,
+) -> None:
+    """List issues.
 
-    Example: jira list issues
+    Example: jira get issues
+    Example: jira get issues --all
     """
     jira = ctx.obj.jira_client
 
+    project = ctx.obj.config["default"]["project"]
     closed_statuses = ctx.obj.config["default"]["definition_closed"]
     status_closed_list_str = ", ".join(f'"{s}"' for s in closed_statuses)
 
-    jql = f"assignee = currentUser() AND status not in ({status_closed_list_str}) ORDER BY updated DESC"
+    conditions = [f'project = "{project}"']
+    if not all_users:
+        conditions.append("assignee = currentUser()")
+    conditions.append(f"status not in ({status_closed_list_str})")
+    jql = f"{' AND '.join(conditions)} ORDER BY updated DESC"
 
     issues: list[Issue] = jira.search_issues(
         jql,
@@ -51,6 +62,13 @@ def issues(ctx: typer.Context) -> None:
     )
 
     display.display_issues(issues)
+
+    total = getattr(issues, "total", len(issues))
+    if total > len(issues):
+        console.print(
+            f"[yellow]Affichage de {len(issues)} ticket(s) sur {total} au total : "
+            "résultat tronqué (voir max_result dans la config).[/yellow]"
+        )
 
 
 @app.command()
