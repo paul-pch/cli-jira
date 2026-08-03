@@ -14,3 +14,17 @@ def get_jira_client(required_envs: dict[str, str]) -> JIRA:
 def get_transitions_from_issue(ctx: typer.Context, issue: Issue) -> list[str]:
     jira = ctx.obj.jira_client
     return [status["name"] for status in jira.transitions(issue)]
+
+
+def get_statuses_for_issue_type(ctx: typer.Context, issue_type: str) -> list[str] | None:
+    """Fetch the possible statuses for an issue type, in the configured project.
+
+    Returns None if the issue type doesn't exist for this project.
+    """
+    jira = ctx.obj.jira_client
+    project = ctx.obj.config["default"]["project"]
+
+    issue_types = jira._get_json(f"project/{project}/statuses")  # noqa: SLF001
+    matching = next((it for it in issue_types if it["name"] == issue_type), None)
+
+    return [status["name"] for status in matching["statuses"]] if matching else None

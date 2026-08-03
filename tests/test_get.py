@@ -98,6 +98,36 @@ def test_status(mock_jira_client: MagicMock) -> None:
     assert "Terminé" in result.output
 
 
+def test_status_no_arg_uses_default_issue_type(mock_jira_client: MagicMock) -> None:
+    mock_jira_client._get_json.return_value = [  # noqa: SLF001
+        {
+            "name": "Story Technique",
+            "statuses": [{"name": "A faire"}, {"name": "En cours"}, {"name": "Terminé"}],
+        },
+        {"name": "Bug", "statuses": [{"name": "Ouvert"}, {"name": "Fermé"}]},
+    ]
+
+    result = runner.invoke(app, ["get", "status"])
+
+    assert result.exit_code == 0
+    assert "A faire" in result.output
+    assert "En cours" in result.output
+    assert "Terminé" in result.output
+    assert "Ouvert" not in result.output
+    mock_jira_client._get_json.assert_called_once_with("project/ST/statuses")  # noqa: SLF001
+
+
+def test_status_no_arg_unknown_default_issue_type(mock_jira_client: MagicMock) -> None:
+    mock_jira_client._get_json.return_value = [  # noqa: SLF001
+        {"name": "Bug", "statuses": [{"name": "Ouvert"}]},
+    ]
+
+    result = runner.invoke(app, ["get", "status"])
+
+    assert result.exit_code == 1
+    assert "introuvable" in result.output
+
+
 def test_users_found(mock_jira_client: MagicMock) -> None:
     mock_jira_client.search_users.return_value = [MagicMock(displayName="Jean Dupont", accountId="acc-1")]
 

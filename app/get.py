@@ -5,7 +5,7 @@ from rich.console import Console
 
 from app.utils import display
 from app.utils.errors import handle_jira_errors
-from app.utils.jira import get_transitions_from_issue
+from app.utils.jira import get_statuses_for_issue_type, get_transitions_from_issue
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -86,11 +86,29 @@ def project(ctx: typer.Context) -> None:
 
 @app.command()
 @handle_jira_errors
-def status(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The code of the issue")]) -> None:
-    """Get available transitions for a specific issue.
+def status(
+    ctx: typer.Context,
+    issue_key: Annotated[
+        Optional[str], typer.Argument(help="Le code du ticket. Si omis, statuts du type de ticket par défaut.")
+    ] = None,
+) -> None:
+    """Get available statuses for the default issue type, or transitions for a specific issue.
 
+    Example: jira get status
     Example: jira get status ST-1060
     """
+    if issue_key is None:
+        issue_type = ctx.obj.config["default"]["issue_type"]
+        statuses_list = get_statuses_for_issue_type(ctx, issue_type)
+
+        if statuses_list is None:
+            project = ctx.obj.config["default"]["project"]
+            console.print(f'Type de ticket "{issue_type}" introuvable pour le projet {project}.', style="yellow")
+            raise typer.Exit(code=1)
+
+        display.display_tuples(columns=[issue_type], rows=[(s,) for s in statuses_list])
+        return
+
     jira = ctx.obj.jira_client
     issue: Issue = jira.issue(issue_key)
     display.display_tuples(columns=[issue.fields.issuetype.name], rows=[(t,) for t in get_transitions_from_issue(ctx, issue)])

@@ -1,5 +1,5 @@
 class MissingEnvVarError(Exception):
-    """Exception personnalisée pour les variables d'environnement manquantes."""
+    """Raised when a required environment variable is missing."""
 
     def __init__(self, missing: list[str]) -> None:
         self.missing = missing
@@ -7,7 +7,7 @@ class MissingEnvVarError(Exception):
 
 
 class InvalidJiraStatusError(Exception):
-    """Exception personnalisée pour les status des tickets jira."""
+    """Raised when a Jira issue status is invalid."""
 
     def __init__(self, status: str) -> None:
         self.status = status

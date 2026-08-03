@@ -20,7 +20,7 @@ console = Console()
 
 @app.callback()
 def main(ctx: typer.Context, verbose: bool = typer.Option(False, "--verbose", "-v")) -> None:
-    """Injecte le client JIRA dans le contexte."""
+    """Inject the JIRA client into the context."""
     try:
         env_vars = utils.check_required_env_vars()
     except MissingEnvVarError as e:
