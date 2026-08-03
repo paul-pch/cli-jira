@@ -2,10 +2,11 @@
 
 ## Installation
 
-To install **cli-jira**, clone the repository and install the dependencies:
+To install **cli-jira**, clone the repository. Dependencies are managed with
+[uv](https://docs.astral.sh/uv/):
 
 ```bash
-# Creates venv, install dependencies, build binary, add it to path
+# Installs dependencies (via uv), builds the binary, adds it to PATH
 make
 ```
 
@@ -14,7 +15,9 @@ make
 After installation, you can run the application:
 
 ```bash
-python -m main get projects
+jira get projects
+# or, without building the binary:
+uv run python -m main get projects
 ```
 
 ## Todo
@@ -29,13 +32,19 @@ python -m main get projects
 
 ## Development
 
-The project includes a Makefile with the following targets:
+The project includes a Makefile, driven by `uv`, with the following targets:
 
-- `make install`: Create virtual environment and install dependencies
+- `make install`: Sync the uv-managed virtual environment with `uv.lock`
 - `make test`: Run tests with coverage
+- `make lint`: Check linting and formatting with ruff
+- `make format`: Auto-fix linting and formatting with ruff
 - `make build`: Create standalone executable
 - `make integrate`: Add executable to PATH by modifying ~/.zshrc and reloading the shell configuration
-- `make all`: Run install, test, and build targets
+- `make upgrade`: Upgrade dependencies and refresh `uv.lock`
+- `make all`: Run install, test, build, and integrate targets
+- `make clean`: Remove the virtual environment and build artifacts
+
+Requires [uv](https://docs.astral.sh/uv/) to be installed.
 
 
 

@@ -1,28 +1,18 @@
-# Python CLI Project Makefile Template
+# Python CLI Project Makefile — driven by uv (https://docs.astral.sh/uv/)
 
-# Variables
-PYTHON := python3
-VENV_DIR := .venv
-VENV_BIN := $(VENV_DIR)/bin
-PIP := $(VENV_BIN)/pip
-PYTHON_CMD := $(VENV_BIN)/python
-SOURCE_DIR := app
-
-.PHONY: install build integrate clean upgrade
+.PHONY: all default install build integrate test lint format upgrade clean
 
 default: install build integrate
 
-.venv:
-	$(PYTHON) -m venv $(VENV_DIR)
-	@echo "Virtual environment created in $(VENV_DIR)"
+all: install test build integrate
 
 install:
-	$(PIP) install -r requirements.txt
+	uv sync --locked
 	@echo "Dependencies installed"
 
 build:
 # 	--exclude-module pkg_resources à retirer quand la lib sera mise à jour
-	$(VENV_BIN)/pyinstaller --exclude-module pkg_resources --onefile --name=jira main.py
+	uv run pyinstaller --exclude-module pkg_resources --onefile --name=jira main.py
 	@echo "Application built"
 
 integrate:
@@ -32,15 +22,23 @@ integrate:
 	@echo "Application integrated into PATH"
 	@echo "-> Please reload your terminal"
 
+test:
+	uv run pytest tests --cov=app --cov-report=term --cov-report=html:coverage-report
+
+lint:
+	uv run ruff check .
+	uv run ruff format --check .
+
+format:
+	uv run ruff format .
+	uv run ruff check --fix .
+
 upgrade:
-	@echo "Checking for outdated packages..."
-	$(PIP) list --outdated
-	@echo "Upgrading packages..."
-	$(PIP) install --upgrade -r requirements.txt
-	@echo "Verifying dependencies..."
-	$(PIP) check
-	@echo "Upgrading complete. All dependencies are verified."
+	uv lock --upgrade
+	uv sync
+	@echo "Dependencies upgraded"
+
 clean:
-	rm -rf dist build *.egg-info coverage-report .coverage .pytest_cache **/__pycache__ jira.spec
+	rm -rf dist build *.egg-info coverage-report .coverage .pytest_cache .ruff_cache **/__pycache__ jira.spec
 	rm -rf .venv
 	@echo "Build artifacts removed"
