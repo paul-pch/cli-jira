@@ -1,5 +1,7 @@
 # cli-jira
 
+[![CI](https://github.com/paul-pch/cli-jira/actions/workflows/ci.yml/badge.svg)](https://github.com/paul-pch/cli-jira/actions/workflows/ci.yml)
+
 ## Installation
 
 To install **cli-jira**, clone the repository. Dependencies are managed with
@@ -46,7 +48,14 @@ The project includes a Makefile, driven by `uv`, with the following targets:
 
 Requires [uv](https://docs.astral.sh/uv/) to be installed.
 
+### CI
 
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and on every pull request:
+
+- `lint`: `ruff check` and `ruff format --check`
+- `test`: `pytest` with coverage
+
+Tests are fully mocked (no real Jira server needed), so CI requires no secrets.
 
 ## License
 

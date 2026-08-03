@@ -11,8 +11,7 @@ install:
 	@echo "Dependencies installed"
 
 build:
-# 	--exclude-module pkg_resources à retirer quand la lib sera mise à jour
-	uv run pyinstaller --exclude-module pkg_resources --onefile --name=jira main.py
+	uv run pyinstaller --onefile --name=jira main.py
 	@echo "Application built"
 
 integrate:

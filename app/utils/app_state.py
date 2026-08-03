@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 
+from app.utils.config_types import AppConfig
+
 
 @dataclass
 class AppState:
-    config: dict[str, str]
+    config: AppConfig
     jira_client: object
     verbose: bool = False
