@@ -12,6 +12,7 @@ from app.utils import utils
 
 console = Console()
 
+
 def default_table() -> Table:
     return Table(
         box=box.ROUNDED,
@@ -59,6 +60,7 @@ def display_issue(issue: Issue, remote_links: list[Any] | None = None) -> None:
             links_table.add_row(link.object.title, link.object.url)
         console.print(Panel(links_table, title="Remote Links"))
 
+
 def display_issues(issues: list[Issue]) -> None:
     table = default_table()
     table.add_column("Key", style="bold", width=12)
@@ -83,4 +85,3 @@ def display_tuples(columns: list[str], rows: list[tuple[str, ...]] | list[str]) 
     for row in rows:
         table.add_row(*row)
     console.print(table)
-

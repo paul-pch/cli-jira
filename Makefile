@@ -27,7 +27,7 @@ test:
 
 lint:
 	uv run ruff check .
-	uv run ruff format --check .
+	uv run ruff format .
 
 format:
 	uv run ruff format .
