@@ -4,6 +4,7 @@ import typer
 from rich.console import Console
 
 from app.utils import display
+from app.utils.errors import handle_jira_errors
 from app.utils.exceptions import InvalidJiraStatusError
 
 if TYPE_CHECKING:
@@ -14,6 +15,7 @@ console = Console()
 
 
 @app.command()
+@handle_jira_errors
 def issue(
     ctx: typer.Context,
     key: Annotated[str, typer.Argument(help="Title")],
@@ -30,29 +32,25 @@ def issue(
     if not status and not comment:
         console.print("Nothing to update !", style="yellow")
         raise typer.Exit(code=1)
-    try:
-        jira = ctx.obj.jira_client
 
-        issue: Issue = jira.issue(key)
+    jira = ctx.obj.jira_client
 
-        if status:
-            transitions = jira.transitions(issue)
-            transition_id = None
-            for t in transitions:
-                if t["name"].lower() == status.lower():
-                    transition_id = t["id"]
-                    break
-            if not transition_id:
-                raise InvalidJiraStatusError(status)
-            jira.transition_issue(issue, transition_id)
+    issue: Issue = jira.issue(key)
 
-        issue = jira.issue(key, fields="key,description,summary,issuetype,assignee,status,created,labels")
+    if status:
+        transitions = jira.transitions(issue)
+        transition_id = None
+        for t in transitions:
+            if t["name"].lower() == status.lower():
+                transition_id = t["id"]
+                break
+        if not transition_id:
+            raise InvalidJiraStatusError(status)
+        jira.transition_issue(issue, transition_id)
 
-        if comment:
-            jira.add_comment(issue, comment)
+    issue = jira.issue(key, fields="key,description,summary,issuetype,assignee,status,created,labels")
 
-        display.display_issue(issue)
+    if comment:
+        jira.add_comment(issue, comment)
 
-    except (ConnectionError, TimeoutError, PermissionError) as e:
-        typer.echo(f"Erreur : {e}", err=True)
-        raise typer.Exit(code=1) from e
+    display.display_issue(issue)

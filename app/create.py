@@ -4,6 +4,7 @@ import typer
 from rich.console import Console
 
 from app.utils import display
+from app.utils.errors import handle_jira_errors
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -13,6 +14,7 @@ console = Console()
 
 
 @app.command()
+@handle_jira_errors
 def issue(
     ctx: typer.Context,
     title: Annotated[str, typer.Argument(help="Title")],
@@ -43,51 +45,46 @@ def issue(
 
     Example: jira create issue <title> --labels <text>
     """
-    try:
-        jira = ctx.obj.jira_client
+    jira = ctx.obj.jira_client
 
-        if not issuetype:
-            issuetype = ctx.obj.config["default"]["issue_type"]
+    if not issuetype:
+        issuetype = ctx.obj.config["default"]["issue_type"]
 
-        if not labels:
-            labels = []
+    if not labels:
+        labels = []
 
-        labels += ctx.obj.config["default"]["labels"]
+    labels += ctx.obj.config["default"]["labels"]
 
-        if not project:
-            project = ctx.obj.config["default"]["project"]
+    if not project:
+        project = ctx.obj.config["default"]["project"]
 
-        fields: dict[str, Any] = {
-            "project": {"key": project},
-            "summary": title,
-            "description": description,
-            "issuetype": {"name": issuetype},
-            "labels": labels,
-        }
+    fields: dict[str, Any] = {
+        "project": {"key": project},
+        "summary": title,
+        "description": description,
+        "issuetype": {"name": issuetype},
+        "labels": labels,
+    }
 
-        if parent:
-            fields["parent"] = {"key": parent}
+    if parent:
+        fields["parent"] = {"key": parent}
 
-        if owned:
-            # Jira token account
-            account_id = jira.myself()["accountId"]
-            fields["assignee"] = {"id": account_id}
+    if owned:
+        # Jira token account
+        account_id = jira.myself()["accountId"]
+        fields["assignee"] = {"id": account_id}
 
-        if owner:
-            users = jira.search_users(query=f"{owner}")
-            if len(users) == 1:
-                fields["assignee"] = {"id": users[0].accountId}
-            elif len(users) > 1:
-                console.print("Too many users found", style="yellow")
-                console.print("Try `jira get users --query michel`")
-                raise typer.Exit(code=1)
-            else:
-                console.print("User not found", style="yellow")
-                raise typer.Exit(code=1)
+    if owner:
+        users = jira.search_users(query=f"{owner}")
+        if len(users) == 1:
+            fields["assignee"] = {"id": users[0].accountId}
+        elif len(users) > 1:
+            console.print("Too many users found", style="yellow")
+            console.print("Try `jira get users --query michel`")
+            raise typer.Exit(code=1)
+        else:
+            console.print("User not found", style="yellow")
+            raise typer.Exit(code=1)
 
-        new_issue: Issue = jira.create_issue(fields=fields)
-        display.display_issue(new_issue)
-
-    except (ConnectionError, TimeoutError, PermissionError) as e:
-        typer.echo(f"Erreur : {e}", err=True)
-        raise typer.Exit(code=1) from e
+    new_issue: Issue = jira.create_issue(fields=fields)
+    display.display_issue(new_issue)
