@@ -1,9 +1,10 @@
+from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Optional
 
 import typer
 from rich.console import Console
 
-from app.utils import display
+from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
 
 if TYPE_CHECKING:
@@ -19,6 +20,7 @@ def issue(
     ctx: typer.Context,
     title: Annotated[str, typer.Argument(help="Title")],
     description: Annotated[Optional[str], typer.Option(help="Larger description")] = "",
+    description_file: Annotated[Optional[str], typer.Option(help="File containing the description")] = None,
     issuetype: Annotated[Optional[str], typer.Option(help="Caterogy of the issue. Default in config.toml")] = None,
     project: Annotated[
         Optional[str],
@@ -47,6 +49,8 @@ def issue(
     """
     jira = ctx.obj.jira_client
 
+    if description_file:
+        description = utils.description_to_jira(Path(description_file).read_text(encoding="utf-8").strip())
     if not issuetype:
         issuetype = ctx.obj.config["default"]["issue_type"]
 

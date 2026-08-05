@@ -49,3 +49,26 @@ def test_comment_only(mock_jira_client: MagicMock) -> None:
     assert result.exit_code == 0
     mock_jira_client.add_comment.assert_called_once_with(issue, "Un commentaire")
     mock_jira_client.transition_issue.assert_not_called()
+
+
+def test_description_only(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--description", "Nouvelle description"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(description="Nouvelle description")
+
+
+def test_description_and_comment(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--description", "Nouvelle desc", "--comment", "Un commentaire"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(description="Nouvelle desc")
+    mock_jira_client.add_comment.assert_called_once_with(issue, "Un commentaire")
