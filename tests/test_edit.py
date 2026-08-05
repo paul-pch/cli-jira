@@ -72,3 +72,15 @@ def test_description_and_comment(mock_jira_client: MagicMock) -> None:
     assert result.exit_code == 0
     issue.update.assert_called_once_with(description="Nouvelle desc")
     mock_jira_client.add_comment.assert_called_once_with(issue, "Un commentaire")
+
+
+def test_estimate_only(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=issue)
+    mock_jira_client.issue.return_value = issue
+    mock_jira_client.search_users.return_value = []
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--estimate", "3h"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={"timetracking": {"estimate": "3h"}})

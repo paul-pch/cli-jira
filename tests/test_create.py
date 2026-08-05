@@ -72,3 +72,14 @@ def test_issue_with_owner_no_match(mock_jira_client: MagicMock) -> None:
     assert result.exit_code == 1
     assert "User not found" in result.output
     mock_jira_client.create_issue.assert_not_called()
+
+
+def test_issue_with_estimate(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = make_issue()
+
+    result = runner.invoke(app, ["create", "issue", "Titre", "--estimate", "2h"])
+
+    assert result.exit_code == 0
+    fields = mock_jira_client.create_issue.call_args.kwargs["fields"]
+    assert fields["timetracking"] == {"estimate": "2h"}

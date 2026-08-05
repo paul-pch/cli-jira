@@ -30,6 +30,7 @@ select = ["ALL"]
 ignore = [
   "COM812", # missing-trailing-comma, conflicts with the formatter
   "CPY001", # missing-copyright-notice
+  "C901",  # Function too complex
   "D100",  # missing module docstring
   "D101",  # missing class docstring
   "D102",  # missing method docstring

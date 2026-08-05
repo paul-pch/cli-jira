@@ -33,6 +33,7 @@ def make_issue(
     labels: list[str] | None = None,
     description: str | None = "Description",
     created: str = "2024-01-01T00:00:00.000+0000",
+    timetracking: dict | None = None,
 ) -> SimpleNamespace:
     """Build a fake `jira.Issue` shaped exactly as `app/utils/display.py` expects it."""
     assignee = SimpleNamespace(displayName=assignee_name) if assignee_name else None
@@ -44,5 +45,6 @@ def make_issue(
         labels=labels or [],
         description=description,
         created=created,
+        timetracking=timetracking or {},
     )
     return SimpleNamespace(key=key, fields=fields)

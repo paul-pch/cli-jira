@@ -4,7 +4,7 @@ repos:
     rev: v0.12.4
     hooks:
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix, --exit-non-zero-on-fix, --config, pyproject.toml]
   - repo: local
     hooks:
     - id: pytest

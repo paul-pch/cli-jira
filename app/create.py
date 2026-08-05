@@ -42,6 +42,10 @@ def issue(
         Optional[str],
         typer.Option(help="Key of the parent issue (e.g., PROJ-123)"),
     ] = None,
+    estimate: Annotated[
+        Optional[str],
+        typer.Option(help="Time estimate in Jira format (e.g. 10m, 1h, 1d, 1w)"),
+    ] = None,
 ) -> None:
     """Create an issue.
 
@@ -69,6 +73,9 @@ def issue(
         "issuetype": {"name": issuetype},
         "labels": labels,
     }
+
+    if estimate:
+        fields["timetracking"] = {"estimate": estimate}
 
     if parent:
         fields["parent"] = {"key": parent}

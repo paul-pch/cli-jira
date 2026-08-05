@@ -27,13 +27,17 @@ def issue(
     comment: Annotated[Optional[str], typer.Option(help="Comment to add")] = None,
     description: Annotated[Optional[str], typer.Option(help="New description to set")] = None,
     description_file: Annotated[Optional[str], typer.Option(help="File containing the new description")] = None,
+    estimate: Annotated[
+        Optional[str],
+        typer.Option(help="Time estimate in Jira format (e.g. 10m, 1h, 1d, 1w)"),
+    ] = None,
 ) -> None:
     """Edit an issue.
 
     Example: jira edit issue ST-1060 --status 'TERMINÉ'
     Example: jira edit issue ST-1060 --description 'Nouvelle description'
     """
-    if not status and not comment and not description and not description_file:
+    if not status and not comment and not description and not description_file and not estimate:
         console.print("Nothing to update !", style="yellow")
         raise typer.Exit(code=1)
 
@@ -60,6 +64,9 @@ def issue(
     if comment:
         jira.add_comment(issue, comment)
 
-    issue = jira.issue(key, fields="key,description,summary,issuetype,assignee,status,created,labels")
+    if estimate:
+        issue.update(fields={"timetracking": {"estimate": estimate}})
+
+    issue = jira.issue(key, fields="key,description,summary,issuetype,assignee,status,created,labels,timetracking")
 
     display.display_issue(issue)
