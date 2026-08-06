@@ -56,7 +56,7 @@ def test_description_only(mock_jira_client: MagicMock) -> None:
     result = runner.invoke(app, ["edit", "issue", "ST-1", "--description", "Nouvelle description"])
 
     assert result.exit_code == 0
-    issue.update.assert_called_once_with(fields={"description": "Nouvelle description"})
+    issue.update.assert_called_once_with(fields={"description": "Nouvelle description"}, update={})
 
 
 def test_description_and_comment(mock_jira_client: MagicMock) -> None:
@@ -67,7 +67,7 @@ def test_description_and_comment(mock_jira_client: MagicMock) -> None:
     result = runner.invoke(app, ["edit", "issue", "ST-1", "--description", "Nouvelle desc", "--comment", "Un commentaire"])
 
     assert result.exit_code == 0
-    issue.update.assert_called_once_with(fields={"description": "Nouvelle desc"})
+    issue.update.assert_called_once_with(fields={"description": "Nouvelle desc"}, update={})
     mock_jira_client.add_comment.assert_called_once_with(issue, "Un commentaire")
 
 
@@ -80,7 +80,36 @@ def test_description_and_estimate_are_sent_in_one_call(mock_jira_client: MagicMo
     result = runner.invoke(app, ["edit", "issue", "ST-1", "--description", "Nouvelle desc", "--estimate", "3h"])
 
     assert result.exit_code == 0
-    issue.update.assert_called_once_with(fields={"description": "Nouvelle desc", "timetracking": {"estimate": "3h"}})
+    issue.update.assert_called_once_with(fields={"description": "Nouvelle desc", "timetracking": {"estimate": "3h"}}, update={})
+
+
+def test_add_and_remove_labels(mock_jira_client: MagicMock) -> None:
+    """Partial edits go through the `update` verb, so Jira applies them without a read-modify-write."""
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--labels", "OPS", "--remove-labels", "Cycle10"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={}, update={"labels": [{"add": "OPS"}, {"remove": "Cycle10"}]})
+
+
+def test_labels_are_cumulative(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(
+        app,
+        ["edit", "issue", "ST-1", "--labels", "OPS", "--labels", "Cycle11", "--remove-labels", "Cycle10"],
+    )
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(
+        fields={},
+        update={"labels": [{"add": "OPS"}, {"add": "Cycle11"}, {"remove": "Cycle10"}]},
+    )
 
 
 def test_estimate_only(mock_jira_client: MagicMock) -> None:
@@ -92,4 +121,4 @@ def test_estimate_only(mock_jira_client: MagicMock) -> None:
     result = runner.invoke(app, ["edit", "issue", "ST-1", "--estimate", "3h"])
 
     assert result.exit_code == 0
-    issue.update.assert_called_once_with(fields={"timetracking": {"estimate": "3h"}})
+    issue.update.assert_called_once_with(fields={"timetracking": {"estimate": "3h"}}, update={})

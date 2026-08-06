@@ -49,7 +49,6 @@ Fonctionnalités en attente d'implémentation :
 
 ### `edit`
 
-* [ ] UPDATE - Editer la liste des labels partielle ou entière
 * [ ] UPDATE - Modifier le titre (summary) d'un ticket
 * [ ] UPDATE - Réassigner un ticket (`--owner` / `--owned`, comme à la création)
 * [ ] UPDATE - Rattacher ou détacher un ticket de son parent

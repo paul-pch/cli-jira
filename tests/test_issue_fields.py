@@ -1,4 +1,4 @@
-from app.utils.issue_fields import IssueFields
+from app.utils.issue_fields import IssueFields, label_operations
 
 
 class TestIssueFields:
@@ -34,3 +34,19 @@ class TestIssueFields:
     def test_empty_but_explicit_values_are_kept() -> None:
         """An empty description or label list is a deliberate reset, not an absent field."""
         assert IssueFields(description="", labels=[]).to_jira() == {"description": "", "labels": []}
+
+
+class TestLabelOperations:
+    @staticmethod
+    def test_no_operation() -> None:
+        assert label_operations([], []) == {}
+
+    @staticmethod
+    def test_adds_come_before_removes() -> None:
+        assert label_operations(["OPS"], ["Cycle10"]) == {"labels": [{"add": "OPS"}, {"remove": "Cycle10"}]}
+
+    @staticmethod
+    def test_several_labels_of_each_kind() -> None:
+        assert label_operations(["a", "b"], ["c"]) == {
+            "labels": [{"add": "a"}, {"add": "b"}, {"remove": "c"}],
+        }

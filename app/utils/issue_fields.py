@@ -6,6 +6,17 @@ from typing import Any
 ISSUE_FIELDS = "key,description,summary,issuetype,assignee,status,created,labels,timetracking"
 
 
+def label_operations(add: list[str], remove: list[str]) -> dict[str, list[dict[str, str]]]:
+    """Build the `update` verb payload for a partial label edit.
+
+    Jira applies these server-side, so no read-modify-write and no lost update when
+    someone else touches the labels at the same time.
+    """
+    operations = [{"add": label} for label in add] + [{"remove": label} for label in remove]
+
+    return {"labels": operations} if operations else {}
+
+
 @dataclass(slots=True)
 class IssueFields:
     """Builder for the `fields` payload shared by `create` and `edit`.
