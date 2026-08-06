@@ -6,6 +6,7 @@ from rich.console import Console
 from app.utils import display
 from app.utils.errors import handle_jira_errors
 from app.utils.exceptions import UserNotFoundError
+from app.utils.issue_fields import ISSUE_FIELDS
 from app.utils.jira import get_statuses_for_issue_type, get_transitions_from_issue
 
 if TYPE_CHECKING:
@@ -24,7 +25,7 @@ def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The
     """
     jira = ctx.obj.jira_client
 
-    issue: Issue = jira.issue(issue_key, fields="key,description,summary,issuetype,assignee,status,created,labels")
+    issue: Issue = jira.issue(issue_key, fields=ISSUE_FIELDS)
     remote_links = jira.remote_links(issue_key)
 
     display.display_issue(issue, remote_links)
@@ -98,16 +99,17 @@ def status(
     Example: jira get status
     Example: jira get status ST-1060
     """
+    jira = ctx.obj.jira_client
+
     if issue_key is None:
         issue_type = ctx.obj.config.default.issue_type
-        statuses_list = get_statuses_for_issue_type(ctx, issue_type)
+        statuses_list = get_statuses_for_issue_type(jira, ctx.obj.config.default.project, issue_type)
 
         display.display_tuples(columns=[issue_type], rows=[(s,) for s in statuses_list])
         return
 
-    jira = ctx.obj.jira_client
     issue: Issue = jira.issue(issue_key)
-    display.display_tuples(columns=[issue.fields.issuetype.name], rows=[(t,) for t in get_transitions_from_issue(ctx, issue)])
+    display.display_tuples(columns=[issue.fields.issuetype.name], rows=[(t,) for t in get_transitions_from_issue(jira, issue)])
 
 
 @app.command()

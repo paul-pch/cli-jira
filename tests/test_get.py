@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 from jira.client import ResultList
 
+from app.utils.issue_fields import ISSUE_FIELDS
 from main import app
 from tests.conftest import make_issue, runner
 
@@ -29,10 +30,7 @@ def test_issue(mock_jira_client: MagicMock) -> None:
     assert result.exit_code == 0
     assert "ST-1060" in result.output
     assert "Titre du ticket" in result.output
-    mock_jira_client.issue.assert_called_once_with(
-        "ST-1060",
-        fields="key,description,summary,issuetype,assignee,status,created,labels",
-    )
+    mock_jira_client.issue.assert_called_once_with("ST-1060", fields=ISSUE_FIELDS)
 
 
 def test_issues(mock_jira_client: MagicMock) -> None:

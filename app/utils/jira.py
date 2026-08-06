@@ -13,16 +13,12 @@ def get_jira_client(required_envs: dict[str, str]) -> JIRA:
         raise typer.Exit(code=1) from e
 
 
-def get_transitions_from_issue(ctx: typer.Context, issue: Issue) -> list[str]:
-    jira = ctx.obj.jira_client
+def get_transitions_from_issue(jira: JIRA, issue: Issue) -> list[str]:
     return [status["name"] for status in jira.transitions(issue)]
 
 
-def get_statuses_for_issue_type(ctx: typer.Context, issue_type: str) -> list[str]:
-    """Fetch the possible statuses for an issue type, in the configured project."""
-    jira = ctx.obj.jira_client
-    project = ctx.obj.config.default.project
-
+def get_statuses_for_issue_type(jira: JIRA, project: str, issue_type: str) -> list[str]:
+    """Fetch the possible statuses for an issue type, in the given project."""
     issue_types = jira._get_json(f"project/{project}/statuses")  # noqa: SLF001
     matching = next((it for it in issue_types if it["name"] == issue_type), None)
 

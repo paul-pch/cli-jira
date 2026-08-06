@@ -56,7 +56,7 @@ def test_description_only(mock_jira_client: MagicMock) -> None:
     result = runner.invoke(app, ["edit", "issue", "ST-1", "--description", "Nouvelle description"])
 
     assert result.exit_code == 0
-    issue.update.assert_called_once_with(description="Nouvelle description")
+    issue.update.assert_called_once_with(fields={"description": "Nouvelle description"})
 
 
 def test_description_and_comment(mock_jira_client: MagicMock) -> None:
@@ -67,8 +67,20 @@ def test_description_and_comment(mock_jira_client: MagicMock) -> None:
     result = runner.invoke(app, ["edit", "issue", "ST-1", "--description", "Nouvelle desc", "--comment", "Un commentaire"])
 
     assert result.exit_code == 0
-    issue.update.assert_called_once_with(description="Nouvelle desc")
+    issue.update.assert_called_once_with(fields={"description": "Nouvelle desc"})
     mock_jira_client.add_comment.assert_called_once_with(issue, "Un commentaire")
+
+
+def test_description_and_estimate_are_sent_in_one_call(mock_jira_client: MagicMock) -> None:
+    """Both used to go through two separate `issue.update` round-trips."""
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--description", "Nouvelle desc", "--estimate", "3h"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={"description": "Nouvelle desc", "timetracking": {"estimate": "3h"}})
 
 
 def test_estimate_only(mock_jira_client: MagicMock) -> None:

@@ -15,7 +15,8 @@ app/
   create.py              # `jira create` — subcommand: issue
   edit.py                # `jira edit` — subcommand: issue
 app/utils/
-  jira.py                # JIRA client factory + helpers (transitions, statuses)
+  jira.py                # JIRA client factory + helpers (transitions, statuses, assignee) — take the client, never ctx
+  issue_fields.py        # ISSUE_FIELDS (fields fetched for display) + IssueFields builder (fields written)
   display.py             # Rich rendering (tables, panels, markdown)
   utils.py               # Env var checks, config file discovery, Markdown <-> Jira wiki conversion
   errors.py              # @handle_jira_errors decorator — catches CliJiraError/JIRAError/ConnectionError etc.
@@ -33,6 +34,8 @@ Key patterns:
 - **Expected errors are raised, never printed.** Any error a command can foresee gets a `CliJiraError` subclass in `exceptions.py`, carrying its own French message; the decorator is the single place that renders it. Commands must not `console.print(...)` + `typer.Exit(1)` — add a subclass instead.
 - **Config values are defaults, not constants.** Options like `--project`, `--issuetype`, `--labels` fall back to `config.toml` when omitted. Use `ctx.obj.config.resolve(<cli_option>, "<config_key>")` for that fallback — only `None` falls back, so an explicit `0`/`""` from the CLI is honoured. `labels` is additive: CLI labels are appended to the configured ones.
 - **Descriptions cross a format boundary.** Input goes through `utils.description_to_jira()` (Markdown → Jira wiki markup) on write; output goes through `utils.format_description()` (Jira wiki → Markdown) before Rich renders it. Any new description-carrying command must do the same.
+- **Write payloads go through `IssueFields`, read payloads through `ISSUE_FIELDS`.** `create` and `edit` never hand-build a `fields` dict: they fill an `IssueFields` and call `.to_jira()`, which omits every attribute left at `None`. A single `issue.update(fields=...)` per command — don't add a second round-trip for a new option. Fetch-for-display always asks for `ISSUE_FIELDS`.
+- **Helpers in `utils/jira.py` take the client explicitly**, not `ctx`. Commands read `ctx.obj` and pass what's needed.
 - `get.status` branches: no argument → available statuses for the default issue type (via the undocumented `project/{key}/statuses` endpoint, reached with `jira._get_json`); with an issue key → available transitions for that issue.
 - Status edits are name-based: `edit.issue --status` matches the transition name case-insensitively and raises `InvalidJiraStatusError` if no transition matches.
 

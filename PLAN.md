@@ -67,18 +67,19 @@ dans `edit.py` ; en l'état elle serait dupliquée, `console.print` compris.
 **Action** — `resolve_assignee(jira, owned, owner) -> dict | None`, qui **lève**
 (cf. point 3) au lieu d'imprimer.
 
-## 5. Découpler les fonctions « service » de Typer
+## 5. Découpler les fonctions « service » de Typer (fait)
 
 **Problème** — `get_transitions_from_issue(ctx, issue)` et
 `get_statuses_for_issue_type(ctx, issue_type)` prennent un `typer.Context` alors
 qu'elles n'ont besoin que du client et de la clé projet.
 
-**Action** — soit passer `(jira, project)`, soit introduire un `JiraService`
-portant client + projet, exposé par `AppState`. Les commandes redeviennent de la
-simple traduction d'arguments. Les tests continuent de mocker le même point
-d'injection (`conftest.py::mock_jira_client`).
+**Action** — passage explicite de `(jira, project)`. Le `JiraService` envisagé au
+départ a été écarté : seules deux fonctions ont besoin du projet, donc la classe
+n'aurait fait qu'ajouter une indirection au-dessus de ce que `AppState` porte
+déjà. Les tests continuent de mocker le même point d'injection
+(`conftest.py::mock_jira_client`).
 
-## 6. Constructeur partagé pour le dict `fields`
+## 6. Constructeur partagé pour le dict `fields` (fait)
 
 **Problème** — `create.py` et `edit.py` construisent les mêmes formes imbriquées
 (`{"key": ...}`, `{"timetracking": {"estimate": ...}}`, labels). La liste des

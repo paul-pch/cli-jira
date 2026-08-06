@@ -1,10 +1,11 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Optional
+from typing import TYPE_CHECKING, Annotated, Optional
 
 import typer
 
 from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
+from app.utils.issue_fields import IssueFields
 from app.utils.jira import resolve_assignee
 
 if TYPE_CHECKING:
@@ -65,22 +66,16 @@ def issue(
 
     labels += config.default.labels
 
-    fields: dict[str, Any] = {
-        "project": {"key": project},
-        "summary": title,
-        "description": description,
-        "issuetype": {"name": issuetype},
-        "labels": labels,
-    }
+    fields = IssueFields(
+        project=project,
+        summary=title,
+        description=description,
+        issuetype=issuetype,
+        labels=labels,
+        parent=parent,
+        estimate=estimate,
+        assignee=resolve_assignee(jira, owned=bool(owned), owner=owner),
+    )
 
-    if estimate:
-        fields["timetracking"] = {"estimate": estimate}
-
-    if parent:
-        fields["parent"] = {"key": parent}
-
-    if assignee := resolve_assignee(jira, owned=bool(owned), owner=owner):
-        fields["assignee"] = assignee
-
-    new_issue: Issue = jira.create_issue(fields=fields)
+    new_issue: Issue = jira.create_issue(fields=fields.to_jira())
     display.display_issue(new_issue)

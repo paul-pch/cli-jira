@@ -6,6 +6,7 @@ import typer
 from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
 from app.utils.exceptions import InvalidJiraStatusError, NothingToUpdateError
+from app.utils.issue_fields import ISSUE_FIELDS, IssueFields
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -51,15 +52,13 @@ def issue(
 
     if description_file:
         description = utils.description_to_jira(Path(description_file).read_text(encoding="utf-8").strip())
-    if description:
-        issue.update(description=description)
+
+    if fields := IssueFields(description=description, estimate=estimate).to_jira():
+        issue.update(fields=fields)
 
     if comment:
         jira.add_comment(issue, comment)
 
-    if estimate:
-        issue.update(fields={"timetracking": {"estimate": estimate}})
-
-    issue = jira.issue(key, fields="key,description,summary,issuetype,assignee,status,created,labels,timetracking")
+    issue = jira.issue(key, fields=ISSUE_FIELDS)
 
     display.display_issue(issue)
