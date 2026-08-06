@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock
 
-from app.utils.exceptions import InvalidJiraStatusError
 from main import app
 from tests.conftest import make_issue, runner
 
@@ -9,7 +8,7 @@ def test_nothing_to_update(mock_jira_client: MagicMock) -> None:
     result = runner.invoke(app, ["edit", "issue", "ST-1"])
 
     assert result.exit_code == 1
-    assert "Nothing to update" in result.output
+    assert "aucune modification" in result.output
     mock_jira_client.issue.assert_not_called()
 
 
@@ -24,19 +23,17 @@ def test_status_transition(mock_jira_client: MagicMock) -> None:
     mock_jira_client.transition_issue.assert_called_once_with(issue, "31")
 
 
-def test_invalid_status_is_not_caught(mock_jira_client: MagicMock) -> None:
-    """Documents current behavior.
-
-    InvalidJiraStatusError isn't part of the caught exception tuple in app/edit.py, so it
-    surfaces as an uncaught exception instead of a friendly message. See TODO.md.
-    """
+def test_invalid_status_reports_the_available_ones(mock_jira_client: MagicMock) -> None:
+    """InvalidJiraStatusError used to surface as a raw traceback; it is now a friendly message."""
     mock_jira_client.issue.return_value = make_issue(key="ST-1")
     mock_jira_client.transitions.return_value = [{"id": "31", "name": "en cours"}]
 
     result = runner.invoke(app, ["edit", "issue", "ST-1", "--status", "Statut inconnu"])
 
     assert result.exit_code == 1
-    assert isinstance(result.exception, InvalidJiraStatusError)
+    assert isinstance(result.exception, SystemExit)
+    assert "Statut inconnu" in result.output
+    assert "en cours" in result.output
     mock_jira_client.transition_issue.assert_not_called()
 
 

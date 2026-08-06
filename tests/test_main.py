@@ -34,5 +34,5 @@ def test_incomplete_config_file_prints_friendly_warning(
     result = runner.invoke(app, ["get", "projects"])
 
     assert result.exit_code == 1
-    assert "Configuration invalide" in result.output
+    assert "configuration invalide" in result.output
     assert "issue_type" in result.output

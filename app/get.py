@@ -5,6 +5,7 @@ from rich.console import Console
 
 from app.utils import display
 from app.utils.errors import handle_jira_errors
+from app.utils.exceptions import UserNotFoundError
 from app.utils.jira import get_statuses_for_issue_type, get_transitions_from_issue
 
 if TYPE_CHECKING:
@@ -101,11 +102,6 @@ def status(
         issue_type = ctx.obj.config.default.issue_type
         statuses_list = get_statuses_for_issue_type(ctx, issue_type)
 
-        if statuses_list is None:
-            project = ctx.obj.config.default.project
-            console.print(f'Type de ticket "{issue_type}" introuvable pour le projet {project}.', style="yellow")
-            raise typer.Exit(code=1)
-
         display.display_tuples(columns=[issue_type], rows=[(s,) for s in statuses_list])
         return
 
@@ -129,7 +125,6 @@ def users(
     users = jira.search_users(query=f"{query}")
 
     if not users:
-        console.print("No user found.", style="yellow")
-        raise typer.Exit(code=1)
+        raise UserNotFoundError(str(query))
 
     display.display_tuples(columns=["Fullname", "account_id"], rows=[(u.displayName, u.accountId) for u in users])

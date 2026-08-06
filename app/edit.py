@@ -2,17 +2,15 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Optional
 
 import typer
-from rich.console import Console
 
 from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
-from app.utils.exceptions import InvalidJiraStatusError
+from app.utils.exceptions import InvalidJiraStatusError, NothingToUpdateError
 
 if TYPE_CHECKING:
     from jira import Issue
 
 app = typer.Typer(help="Edit a specific ressource")
-console = Console()
 
 
 @app.command()
@@ -38,8 +36,7 @@ def issue(
     Example: jira edit issue ST-1060 --description 'Nouvelle description'
     """
     if not status and not comment and not description and not description_file and not estimate:
-        console.print("Nothing to update !", style="yellow")
-        raise typer.Exit(code=1)
+        raise NothingToUpdateError
 
     jira = ctx.obj.jira_client
 
@@ -47,13 +44,9 @@ def issue(
 
     if status:
         transitions = jira.transitions(issue)
-        transition_id = None
-        for t in transitions:
-            if t["name"].lower() == status.lower():
-                transition_id = t["id"]
-                break
+        transition_id = next((t["id"] for t in transitions if t["name"].lower() == status.lower()), None)
         if not transition_id:
-            raise InvalidJiraStatusError(status)
+            raise InvalidJiraStatusError(status, [t["name"] for t in transitions])
         jira.transition_issue(issue, transition_id)
 
     if description_file:

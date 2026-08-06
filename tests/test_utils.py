@@ -27,6 +27,6 @@ class TestUtils:
         with pytest.raises(MissingEnvVarError) as exc_info:
             utils.check_required_env_vars()
 
-        assert "Variables manquantes" in str(exc_info.value)
+        assert "manquante" in str(exc_info.value)
         assert "JIRA_URL" in str(exc_info.value)
         assert "JIRA_TOKEN" in str(exc_info.value)

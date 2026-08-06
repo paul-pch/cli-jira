@@ -18,8 +18,8 @@ app/utils/
   jira.py                # JIRA client factory + helpers (transitions, statuses)
   display.py             # Rich rendering (tables, panels, markdown)
   utils.py               # Env var checks, config file discovery, Markdown <-> Jira wiki conversion
-  errors.py              # @handle_jira_errors decorator — catches JIRAError/ConnectionError etc.
-  exceptions.py          # Custom exceptions (MissingEnvVarError, InvalidJiraStatusError)
+  errors.py              # @handle_jira_errors decorator — catches CliJiraError/JIRAError/ConnectionError etc.
+  exceptions.py          # CliJiraError base + one subclass per expected error
   config_types.py        # Frozen dataclasses: AppConfig (+ .resolve), DefaultConfig (+ .from_toml)
   app_state.py           # AppState dataclass — injected into Typer ctx.obj
 config.toml              # Local config: default project, issue type, closed statuses, labels
@@ -29,7 +29,8 @@ tests/                   # pytest — fully mocked, no real Jira needed
 Key patterns:
 
 - **Everything flows through `ctx.obj`.** The `main.py` callback runs before every subcommand: it validates env vars, loads the TOML config, builds the JIRA client, and stores an `AppState` in `ctx.obj`. Commands never build a client themselves — they read `ctx.obj.jira_client` and `ctx.obj.config.default.<key>`.
-- **Every command is decorated with `@handle_jira_errors`**, which converts Jira/network exceptions into a one-line CLI error and `exit 1`. Order matters: `@app.command()` first, then `@handle_jira_errors`.
+- **Every command — and the `main.py` callback — is decorated with `@handle_jira_errors`**, which converts expected and Jira/network exceptions into a one-line CLI error and `exit 1`. Order matters: `@app.command()` first, then `@handle_jira_errors`.
+- **Expected errors are raised, never printed.** Any error a command can foresee gets a `CliJiraError` subclass in `exceptions.py`, carrying its own French message; the decorator is the single place that renders it. Commands must not `console.print(...)` + `typer.Exit(1)` — add a subclass instead.
 - **Config values are defaults, not constants.** Options like `--project`, `--issuetype`, `--labels` fall back to `config.toml` when omitted. Use `ctx.obj.config.resolve(<cli_option>, "<config_key>")` for that fallback — only `None` falls back, so an explicit `0`/`""` from the CLI is honoured. `labels` is additive: CLI labels are appended to the configured ones.
 - **Descriptions cross a format boundary.** Input goes through `utils.description_to_jira()` (Markdown → Jira wiki markup) on write; output goes through `utils.format_description()` (Jira wiki → Markdown) before Rich renders it. Any new description-carrying command must do the same.
 - `get.status` branches: no argument → available statuses for the default issue type (via the undocumented `project/{key}/statuses` endpoint, reached with `jira._get_json`); with an issue key → available transitions for that issue.

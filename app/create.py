@@ -2,16 +2,15 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Optional
 
 import typer
-from rich.console import Console
 
 from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
+from app.utils.jira import resolve_assignee
 
 if TYPE_CHECKING:
     from jira import Issue
 
 app = typer.Typer(help="Create a specific ressource")
-console = Console()
 
 
 @app.command()
@@ -80,22 +79,8 @@ def issue(
     if parent:
         fields["parent"] = {"key": parent}
 
-    if owned:
-        # Jira token account
-        account_id = jira.myself()["accountId"]
-        fields["assignee"] = {"id": account_id}
-
-    if owner:
-        users = jira.search_users(query=f"{owner}")
-        if len(users) == 1:
-            fields["assignee"] = {"id": users[0].accountId}
-        elif len(users) > 1:
-            console.print("Too many users found", style="yellow")
-            console.print("Try `jira get users --query michel`")
-            raise typer.Exit(code=1)
-        else:
-            console.print("User not found", style="yellow")
-            raise typer.Exit(code=1)
+    if assignee := resolve_assignee(jira, owned=bool(owned), owner=owner):
+        fields["assignee"] = assignee
 
     new_issue: Issue = jira.create_issue(fields=fields)
     display.display_issue(new_issue)

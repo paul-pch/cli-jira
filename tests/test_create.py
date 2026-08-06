@@ -60,7 +60,7 @@ def test_issue_with_owner_too_many_matches(mock_jira_client: MagicMock) -> None:
     result = runner.invoke(app, ["create", "issue", "Titre", "--no-owned", "--owner", "michel"])
 
     assert result.exit_code == 1
-    assert "Too many users found" in result.output
+    assert "plusieurs utilisateurs" in result.output
     mock_jira_client.create_issue.assert_not_called()
 
 
@@ -70,7 +70,7 @@ def test_issue_with_owner_no_match(mock_jira_client: MagicMock) -> None:
     result = runner.invoke(app, ["create", "issue", "Titre", "--no-owned", "--owner", "michel"])
 
     assert result.exit_code == 1
-    assert "User not found" in result.output
+    assert "aucun utilisateur" in result.output
     mock_jira_client.create_issue.assert_not_called()
 
 

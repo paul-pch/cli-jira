@@ -144,4 +144,4 @@ def test_users_not_found(mock_jira_client: MagicMock) -> None:
     result = runner.invoke(app, ["get", "users", "--query", "personne"])
 
     assert result.exit_code == 1
-    assert "No user found." in result.output
+    assert "aucun utilisateur" in result.output

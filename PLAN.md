@@ -38,7 +38,7 @@ vérification de type ni autocomplétion sur tous les appels Jira du projet.
 - helper `AppConfig.resolve(override, key)` : renvoie l'override CLI s'il est
   fourni, sinon la valeur de config — en distinguant `None` de `0` / `""`.
 
-## 3. Unifier la signalisation des erreurs
+## 3. Unifier la signalisation des erreurs (fait)
 
 **Problème** — quatre styles pour la même chose :
 
@@ -56,7 +56,7 @@ inexistant, parent invalide, type de lien inconnu).
 `handle_jira_errors`. Les commandes ne font plus que `raise` ; le rendu vit à un
 seul endroit.
 
-## 4. Extraire la résolution d'assignee
+## 4. Extraire la résolution d'assignee (fait)
 
 **Problème** — `create.py` mélange dans un même bloc la résolution de
 `--owned` / `--owner`, l'affichage et la sortie du programme.
