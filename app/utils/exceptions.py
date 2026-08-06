@@ -34,6 +34,15 @@ class InvalidJiraStatusError(CliJiraError):
         super().__init__(message)
 
 
+class InvalidIssueLinkTypeError(CliJiraError):
+    """Raised when no Jira link type matches the requested relation."""
+
+    def __init__(self, link_type: str, available: list[str]) -> None:
+        self.link_type = link_type
+        self.available = available
+        super().__init__(f"type de lien invalide : {link_type}. Types disponibles : {', '.join(available)}")
+
+
 class IssueTypeNotFoundError(CliJiraError):
     """Raised when an issue type doesn't exist for the configured project."""
 

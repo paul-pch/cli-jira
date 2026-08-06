@@ -22,6 +22,26 @@ def _timetracking(timetracking: Any, *keys: str) -> str | None:  # noqa: ANN401
     return None
 
 
+def _links(issuelinks: Any) -> list[tuple[str, str]]:  # noqa: ANN401
+    """Flatten issue links into (relation as read from this issue, other issue key) pairs.
+
+    Jira puts the other issue under `outwardIssue` or `inwardIssue` depending on which
+    end of the relation the current issue sits on, and words the relation accordingly.
+    """
+    relations = []
+
+    for link in issuelinks or []:
+        outward = getattr(link, "outwardIssue", None)
+        inward = getattr(link, "inwardIssue", None)
+
+        if outward is not None:
+            relations.append((link.type.outward, outward.key))
+        elif inward is not None:
+            relations.append((link.type.inward, inward.key))
+
+    return relations
+
+
 @dataclass(frozen=True, slots=True)
 class IssueView:
     """An issue reduced to what the console shows, with every optional field resolved once."""
@@ -37,6 +57,7 @@ class IssueView:
     estimate: str | None
     time_spent: str | None
     remaining_estimate: str | None
+    links: list[tuple[str, str]]
 
     @classmethod
     def from_issue(cls, issue: Issue) -> "IssueView":
@@ -57,4 +78,5 @@ class IssueView:
             estimate=_timetracking(timetracking, "originalEstimate", "estimate"),
             time_spent=_timetracking(timetracking, "timeSpent"),
             remaining_estimate=_timetracking(timetracking, "remainingEstimate"),
+            links=_links(getattr(fields, "issuelinks", None)),
         )

@@ -3,7 +3,7 @@ from typing import Any
 
 # Fields requested from Jira whenever a single issue is fetched for display.
 # Keep it in sync with what `display.py` reads.
-ISSUE_FIELDS = "key,description,summary,issuetype,assignee,status,created,labels,timetracking"
+ISSUE_FIELDS = "key,description,summary,issuetype,assignee,status,created,labels,timetracking,issuelinks"
 
 
 def label_operations(add: list[str], remove: list[str]) -> dict[str, list[dict[str, str]]]:

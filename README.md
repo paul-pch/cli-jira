@@ -49,7 +49,6 @@ Fonctionnalités en attente d'implémentation :
 
 ### `edit`
 
-* [ ] UPDATE - Lier deux tickets entre eux (blocks, relates to, duplicates)
 
 ### `get`
 

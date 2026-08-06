@@ -56,6 +56,14 @@ def display_issue(issue: Issue, remote_links: list[Any] | None = None) -> None:
 
     console.print(layout)
 
+    if view.links:
+        links_table = Table(box=box.SIMPLE, show_header=False, padding=(0, 0), expand=True)
+        links_table.add_column(style="bold")
+        links_table.add_column(style="dim")
+        for relation, other_key in view.links:
+            links_table.add_row(relation, other_key)
+        console.print(Panel(links_table, title="Issue Links"))
+
     if remote_links:
         links_table = Table(box=box.SIMPLE, show_header=False, padding=(0, 0), expand=True)
         links_table.add_column(style="bold")

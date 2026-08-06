@@ -1,7 +1,13 @@
 import typer
 from jira import JIRA, Issue, JIRAError
 
-from app.utils.exceptions import AmbiguousUserError, InvalidJiraStatusError, IssueTypeNotFoundError, UserNotFoundError
+from app.utils.exceptions import (
+    AmbiguousUserError,
+    InvalidIssueLinkTypeError,
+    InvalidJiraStatusError,
+    IssueTypeNotFoundError,
+    UserNotFoundError,
+)
 
 
 def get_jira_client(required_envs: dict[str, str]) -> JIRA:
@@ -37,6 +43,31 @@ def transition_to_status(jira: JIRA, issue: Issue, status: str) -> None:
         raise InvalidJiraStatusError(status, [t["name"] for t in transitions])
 
     jira.transition_issue(issue, transition_id)
+
+
+def resolve_link_type(jira: JIRA, wanted: str) -> str:
+    """Resolve a link type to the exact string Jira knows, matching name or direction wording.
+
+    Matching the outward wording ("blocks") keeps the direction, the inward one
+    ("is blocked by") makes the lib swap the two issues.
+    """
+    known = jira.issue_link_types()
+    lowered = wanted.lower()
+
+    for attribute in ("name", "outward", "inward"):
+        for link_type in known:
+            if lowered == getattr(link_type, attribute).lower():
+                return str(getattr(link_type, attribute))
+
+    raise InvalidIssueLinkTypeError(wanted, [t.name for t in known])
+
+
+def link_issues(jira: JIRA, issue: Issue, link_type: str, targets: list[str]) -> None:
+    """Link an issue to others, the current issue being the one the relation starts from."""
+    resolved = resolve_link_type(jira, link_type)
+
+    for target in targets:
+        jira.create_issue_link(type=resolved, inwardIssue=issue.key, outwardIssue=target)
 
 
 def resolve_assignee(jira: JIRA, owned: bool, owner: str | None) -> dict[str, str] | None:

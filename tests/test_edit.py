@@ -1,4 +1,5 @@
-from unittest.mock import MagicMock
+from types import SimpleNamespace
+from unittest.mock import MagicMock, call
 
 from main import app
 from tests.conftest import make_issue, runner
@@ -180,6 +181,68 @@ def test_no_worklog_by_default(mock_jira_client: MagicMock) -> None:
 
     assert result.exit_code == 0
     mock_jira_client.add_worklog.assert_not_called()
+
+
+def test_link_issues(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    mock_jira_client.issue.return_value = issue
+    mock_jira_client.issue_link_types.return_value = [
+        SimpleNamespace(name="Blocks", outward="blocks", inward="is blocked by"),
+    ]
+
+    result = runner.invoke(
+        app,
+        ["edit", "issue", "ST-1", "--link-type", "BLOCKS", "--link-issue", "ST-2", "--link-issue", "ST-3"],
+    )
+
+    assert result.exit_code == 0
+    assert mock_jira_client.create_issue_link.call_args_list == [
+        call(type="Blocks", inwardIssue="ST-1", outwardIssue="ST-2"),
+        call(type="Blocks", inwardIssue="ST-1", outwardIssue="ST-3"),
+    ]
+
+
+def test_link_type_matched_on_its_inward_wording(mock_jira_client: MagicMock) -> None:
+    """Passing the inward wording is what makes the lib swap the two issues."""
+    mock_jira_client.issue.return_value = make_issue(key="ST-1")
+    mock_jira_client.issue_link_types.return_value = [
+        SimpleNamespace(name="Blocks", outward="blocks", inward="is blocked by"),
+    ]
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--link-type", "IS BLOCKED BY", "--link-issue", "ST-2"])
+
+    assert result.exit_code == 0
+    mock_jira_client.create_issue_link.assert_called_once_with(
+        type="is blocked by",
+        inwardIssue="ST-1",
+        outwardIssue="ST-2",
+    )
+
+
+def test_link_issues_defaults_to_relates(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    mock_jira_client.issue.return_value = issue
+    mock_jira_client.issue_link_types.return_value = [
+        SimpleNamespace(name="Relates", outward="relates to", inward="relates to"),
+    ]
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--link-issue", "ST-2"])
+
+    assert result.exit_code == 0
+    mock_jira_client.create_issue_link.assert_called_once_with(type="Relates", inwardIssue="ST-1", outwardIssue="ST-2")
+
+
+def test_unknown_link_type_lists_the_available_ones(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.issue.return_value = make_issue(key="ST-1")
+    mock_jira_client.issue_link_types.return_value = [
+        SimpleNamespace(name="Blocks", outward="blocks", inward="is blocked by"),
+    ]
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--link-type", "casse", "--link-issue", "ST-2"])
+
+    assert result.exit_code == 1
+    assert "Blocks" in result.output
+    mock_jira_client.create_issue_link.assert_not_called()
 
 
 def test_comment_only(mock_jira_client: MagicMock) -> None:

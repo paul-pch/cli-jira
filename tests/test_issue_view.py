@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
 from app.utils.issue_view import UNASSIGNED, IssueView
-from tests.conftest import make_issue
+from tests.conftest import make_issue, make_issue_link
 
 
 class TestIssueView:
@@ -71,3 +71,21 @@ class TestIssueView:
         assert view.created == ""
         assert view.description is None
         assert view.estimate is None
+
+
+class TestIssueViewLinks:
+    @staticmethod
+    def test_no_link() -> None:
+        assert IssueView.from_issue(make_issue()).links == []
+
+    @staticmethod
+    def test_outward_link_reads_the_outward_wording() -> None:
+        issue = make_issue(issuelinks=[make_issue_link(relation="blocks", other_key="ST-2")])
+
+        assert IssueView.from_issue(issue).links == [("blocks", "ST-2")]
+
+    @staticmethod
+    def test_inward_link_reads_the_inward_wording() -> None:
+        issue = make_issue(issuelinks=[make_issue_link(relation="is blocked by", other_key="ST-3", outward=False)])
+
+        assert IssueView.from_issue(issue).links == [("is blocked by", "ST-3")]

@@ -7,7 +7,7 @@ from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
 from app.utils.exceptions import ConflictingParentOptionsError, NothingToUpdateError
 from app.utils.issue_fields import ISSUE_FIELDS, IssueFields, label_operations
-from app.utils.jira import resolve_assignee, transition_to_status
+from app.utils.jira import link_issues, resolve_assignee, transition_to_status
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -54,6 +54,14 @@ def issue(
         typer.Option(help="Key of the parent issue to attach to (e.g., PROJ-123)"),
     ] = None,
     no_parent: Annotated[bool, typer.Option("--no-parent", help="Detach the issue from its parent")] = False,
+    link_issue: Annotated[
+        Optional[list[str]],
+        typer.Option(help="Key of an issue to link to (e.g., PROJ-123). Repeatable."),
+    ] = None,
+    link_type: Annotated[
+        str,
+        typer.Option(help="Relation carried by --link-issue, read from this issue. Example : 'blocks'"),
+    ] = "Relates",
 ) -> None:
     """Edit an issue.
 
@@ -64,10 +72,11 @@ def issue(
     Example: jira edit issue ST-1060 --owner michel
     Example: jira edit issue ST-1060 --parent ST-XXXX
     Example: jira edit issue ST-1060 --worklog 2h
+    Example: jira edit issue ST-1060 --link-type blocks --link-issue ST-1061
     """
     changes = [title, status, comment, description, description_file, estimate, worklog, labels, remove_labels, owned, owner]
 
-    if not any([*changes, parent, no_parent]):
+    if not any([*changes, parent, no_parent, link_issue]):
         raise NothingToUpdateError
 
     if parent and no_parent:
@@ -108,6 +117,9 @@ def issue(
     # A worklog is its own resource, not a field: Jira recomputes the remaining estimate from it.
     if worklog:
         jira.add_worklog(issue, timeSpent=worklog)
+
+    if link_issue:
+        link_issues(jira, issue, link_type, link_issue)
 
     issue = jira.issue(key, fields=ISSUE_FIELDS)
 
