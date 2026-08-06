@@ -12,6 +12,27 @@ To install **cli-jira**, clone the repository. Dependencies are managed with
 make
 ```
 
+## Configuration
+
+**cli-jira** s'authentifie avec un **jeton d'API Jira** (et non votre mot de passe).
+Créez-en un depuis [Atlassian account settings → Security → API tokens](https://id.atlassian.com/manage-profile/security/api-tokens),
+puis exportez les trois variables d'environnement requises :
+
+```bash
+export JIRA_URL="https://votre-domaine.atlassian.net"
+export JIRA_EMAIL="votre.email@example.com"
+export JIRA_TOKEN="votre-jeton-d-api"
+```
+
+Si l'une d'elles est manquante, la CLI s'arrête avec un message indiquant laquelle.
+
+Le reste de la configuration (projet par défaut, type de ticket, statuts considérés
+comme fermés, labels par défaut) se trouve dans un `config.toml`, cherché dans cet ordre :
+
+1. `./config.toml`
+2. `~/.config/jira/config.toml`
+3. `/etc/jira/config.toml`
+
 ## Usage
 
 After installation, you can run the application:

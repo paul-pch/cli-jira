@@ -73,15 +73,15 @@ def issues(
 
 @app.command()
 @handle_jira_errors
-def project(ctx: typer.Context) -> None:
+def projects(ctx: typer.Context) -> None:
     """List available projects.
 
-    Example: jira list project
+    Example: jira get projects
     """
     jira = ctx.obj.jira_client
-    projects = jira.projects()
+    project_list = jira.projects()
 
-    display.display_tuples(columns=["Code", "Name"], rows=[(p.key, p.name) for p in projects])
+    display.display_tuples(columns=["Code", "Name"], rows=[(p.key, p.name) for p in project_list])
 
 
 @app.command()

@@ -7,13 +7,13 @@ from main import app
 from tests.conftest import make_issue, runner
 
 
-def test_project(mock_jira_client: MagicMock) -> None:
+def test_projects(mock_jira_client: MagicMock) -> None:
     mock_jira_client.projects.return_value = [
         SimpleNamespace(key="ST", name="Socle Technique"),
         SimpleNamespace(key="OPS", name="Operations"),
     ]
 
-    result = runner.invoke(app, ["get", "project"])
+    result = runner.invoke(app, ["get", "projects"])
 
     assert result.exit_code == 0
     assert "ST" in result.output

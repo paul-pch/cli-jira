@@ -10,7 +10,7 @@ def test_missing_env_vars_prints_friendly_warning(monkeypatch: pytest.MonkeyPatc
     monkeypatch.delenv("JIRA_EMAIL", raising=False)
     monkeypatch.delenv("JIRA_TOKEN", raising=False)
 
-    result = runner.invoke(app, ["get", "project"])
+    result = runner.invoke(app, ["get", "projects"])
 
     assert result.exit_code == 1
     assert isinstance(result.exception, SystemExit)
