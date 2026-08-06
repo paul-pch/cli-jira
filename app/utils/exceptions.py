@@ -60,6 +60,13 @@ class InvalidRemoteLinkError(CliJiraError):
         super().__init__(f"lien invalide : {raw}. Attendu : une URL http(s), éventuellement préfixée par `Titre=`")
 
 
+class ConflictingJqlOptionsError(CliJiraError):
+    """Raised when a raw JQL query is combined with the filter options it would override."""
+
+    def __init__(self) -> None:
+        super().__init__("--jql remplace toute la requête : il ne peut pas être combiné aux options de filtre")
+
+
 class ConflictingParentOptionsError(CliJiraError):
     """Raised when attaching and detaching a parent are asked for at once."""
 

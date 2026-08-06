@@ -5,7 +5,7 @@ from rich.console import Console
 
 from app.utils import display
 from app.utils.errors import handle_jira_errors
-from app.utils.exceptions import UserNotFoundError
+from app.utils.exceptions import ConflictingJqlOptionsError, UserNotFoundError
 from app.utils.issue_fields import ISSUE_FIELDS
 from app.utils.jira import get_statuses_for_issue_type, get_transitions_from_issue, resolve_assignee
 from app.utils.jql import build_issues_jql
@@ -51,6 +51,10 @@ def issues(
         Optional[str],
         typer.Option(help="Ne garder que les tickets de cet utilisateur. Prioritaire sur --all."),
     ] = None,
+    jql: Annotated[
+        Optional[str],
+        typer.Option(help="Requête JQL brute, utilisée telle quelle. Exclut les autres options de filtre."),
+    ] = None,
 ) -> None:
     """List issues.
 
@@ -58,19 +62,24 @@ def issues(
     Example: jira get issues --all
     Example: jira get issues --project ST --status 'EN COURS'
     Example: jira get issues --assignee michel
+    Example: jira get issues --jql 'project = ST AND labels = OPS ORDER BY created DESC'
     """
+    if jql and any([project, status, assignee, all_users]):
+        raise ConflictingJqlOptionsError
+
     jira = ctx.obj.jira_client
 
-    # Resolved to an account id: on Jira Cloud, JQL doesn't match users by name.
-    assignee_account = resolve_assignee(jira, owned=False, owner=assignee)
+    if not jql:
+        # Resolved to an account id: on Jira Cloud, JQL doesn't match users by name.
+        assignee_account = resolve_assignee(jira, owned=False, owner=assignee)
 
-    jql = build_issues_jql(
-        ctx.obj.config.resolve(project, "project"),
-        assignee_id=assignee_account["id"] if assignee_account else None,
-        all_users=all_users,
-        statuses=status or [],
-        closed_statuses=ctx.obj.config.default.definition_closed,
-    )
+        jql = build_issues_jql(
+            ctx.obj.config.resolve(project, "project"),
+            assignee_id=assignee_account["id"] if assignee_account else None,
+            all_users=all_users,
+            statuses=status or [],
+            closed_statuses=ctx.obj.config.default.definition_closed,
+        )
 
     issues: list[Issue] = jira.search_issues(
         jql,

@@ -106,6 +106,26 @@ def test_issues_unknown_assignee_does_not_search(mock_jira_client: MagicMock) ->
     mock_jira_client.search_issues.assert_not_called()
 
 
+def test_issues_with_raw_jql(mock_jira_client: MagicMock) -> None:
+    """The query is passed through untouched, ORDER BY included."""
+    mock_jira_client.search_issues.return_value = [make_issue(key="ST-1")]
+    raw = "labels = OPS ORDER BY created ASC"
+
+    result = runner.invoke(app, ["get", "issues", "--jql", raw])
+
+    assert result.exit_code == 0
+    assert mock_jira_client.search_issues.call_args[0][0] == raw
+    mock_jira_client.search_users.assert_not_called()
+
+
+def test_raw_jql_conflicts_with_the_filter_options(mock_jira_client: MagicMock) -> None:
+    result = runner.invoke(app, ["get", "issues", "--jql", "labels = OPS", "--project", "OPS"])
+
+    assert result.exit_code == 1
+    assert "--jql" in result.output
+    mock_jira_client.search_issues.assert_not_called()
+
+
 def test_issues_truncated_warns(mock_jira_client: MagicMock) -> None:
     mock_jira_client.search_issues.return_value = ResultList(
         [make_issue(key="ST-1")],
