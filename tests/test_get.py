@@ -71,6 +71,41 @@ def test_issues_all(mock_jira_client: MagicMock) -> None:
     assert 'project = "ST"' in jql
 
 
+def test_issues_filtered_by_project_and_status(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.search_issues.return_value = [make_issue(key="OPS-1")]
+
+    result = runner.invoke(app, ["get", "issues", "--project", "OPS", "--status", "EN COURS", "--status", "Terminé"])
+
+    assert result.exit_code == 0
+    jql = mock_jira_client.search_issues.call_args[0][0]
+    assert 'project = "OPS"' in jql
+    assert 'status in ("EN COURS", "Terminé")' in jql
+    assert "not in" not in jql
+
+
+def test_issues_filtered_by_assignee(mock_jira_client: MagicMock) -> None:
+    """JQL matches users by account id on Jira Cloud, so the name is resolved first."""
+    mock_jira_client.search_users.return_value = [MagicMock(accountId="acc-michel")]
+    mock_jira_client.search_issues.return_value = [make_issue(key="ST-1")]
+
+    result = runner.invoke(app, ["get", "issues", "--assignee", "michel"])
+
+    assert result.exit_code == 0
+    jql = mock_jira_client.search_issues.call_args[0][0]
+    assert 'assignee = "acc-michel"' in jql
+    assert "currentUser()" not in jql
+
+
+def test_issues_unknown_assignee_does_not_search(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.search_users.return_value = []
+
+    result = runner.invoke(app, ["get", "issues", "--assignee", "personne"])
+
+    assert result.exit_code == 1
+    assert "aucun utilisateur" in result.output
+    mock_jira_client.search_issues.assert_not_called()
+
+
 def test_issues_truncated_warns(mock_jira_client: MagicMock) -> None:
     mock_jira_client.search_issues.return_value = ResultList(
         [make_issue(key="ST-1")],

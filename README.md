@@ -52,7 +52,6 @@ Fonctionnalités en attente d'implémentation :
 
 ### `get`
 
-* [ ] GET - Filtrer `get issues` par projet, statut ou assigné (options CLI)
 * [ ] GET - Passer une requête JQL brute à `get issues`
 * [ ] GET - Paginer les résultats (`--limit` / `--start`) au lieu de tronquer à `max_result`
 * [ ] GET - Afficher les commentaires d'un ticket
