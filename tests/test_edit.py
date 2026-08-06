@@ -37,6 +37,31 @@ def test_invalid_status_reports_the_available_ones(mock_jira_client: MagicMock) 
     mock_jira_client.transition_issue.assert_not_called()
 
 
+def test_title_only(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--title", "Nouveau titre"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={"summary": "Nouveau titre"}, update={})
+
+
+def test_title_with_other_fields_is_one_call(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--title", "Nouveau titre", "--labels", "OPS"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(
+        fields={"summary": "Nouveau titre"},
+        update={"labels": [{"add": "OPS"}]},
+    )
+
+
 def test_comment_only(mock_jira_client: MagicMock) -> None:
     issue = make_issue(key="ST-1")
     mock_jira_client.issue.return_value = issue

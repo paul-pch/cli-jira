@@ -20,6 +20,7 @@ app = typer.Typer(help="Edit a specific ressource")
 def issue(
     ctx: typer.Context,
     key: Annotated[str, typer.Argument(help="Title")],
+    title: Annotated[Optional[str], typer.Option(help="New title (summary) to set")] = None,
     status: Annotated[
         Optional[str],
         typer.Option(help="New status to update. Example : 'EN COURS DE REVUE'"),
@@ -43,10 +44,11 @@ def issue(
     """Edit an issue.
 
     Example: jira edit issue ST-1060 --status 'TERMINÉ'
+    Example: jira edit issue ST-1060 --title 'Nouveau titre'
     Example: jira edit issue ST-1060 --description 'Nouvelle description'
     Example: jira edit issue ST-1060 --labels OPS --labels Cycle11 --remove-labels Cycle10
     """
-    if not any([status, comment, description, description_file, estimate, labels, remove_labels]):
+    if not any([title, status, comment, description, description_file, estimate, labels, remove_labels]):
         raise NothingToUpdateError
 
     jira = ctx.obj.jira_client
@@ -59,7 +61,7 @@ def issue(
     if description_file:
         description = utils.description_to_jira(Path(description_file).read_text(encoding="utf-8").strip())
 
-    fields = IssueFields(description=description, estimate=estimate).to_jira()
+    fields = IssueFields(summary=title, description=description, estimate=estimate).to_jira()
     operations = label_operations(labels or [], remove_labels or [])
 
     if fields or operations:
