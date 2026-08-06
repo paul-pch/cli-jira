@@ -55,6 +55,11 @@ def issues(
         Optional[str],
         typer.Option(help="Requête JQL brute, utilisée telle quelle. Exclut les autres options de filtre."),
     ] = None,
+    limit: Annotated[
+        Optional[int],
+        typer.Option(help="Nombre maximum de tickets à afficher. Par défaut max_result de config.toml."),
+    ] = None,
+    start: Annotated[int, typer.Option(help="Index du premier ticket à afficher (pagination).")] = 0,
 ) -> None:
     """List issues.
 
@@ -63,6 +68,7 @@ def issues(
     Example: jira get issues --project ST --status 'EN COURS'
     Example: jira get issues --assignee michel
     Example: jira get issues --jql 'project = ST AND labels = OPS ORDER BY created DESC'
+    Example: jira get issues --limit 10 --start 10
     """
     if jql and any([project, status, assignee, all_users]):
         raise ConflictingJqlOptionsError
@@ -83,18 +89,20 @@ def issues(
 
     issues: list[Issue] = jira.search_issues(
         jql,
-        startAt=0,
-        maxResults=ctx.obj.config.default.max_result,
+        startAt=start,
+        maxResults=ctx.obj.config.resolve(limit, "max_result"),
         fields="key,summary,assignee,status,created",
     )
 
     display.display_issues(issues)
 
     total = getattr(issues, "total", len(issues))
-    if total > len(issues):
+
+    if not issues:
+        console.print(f"[yellow]Aucun ticket à partir de l'index {start} (total : {total}).[/yellow]")
+    elif start + len(issues) < total:
         console.print(
-            f"[yellow]Affichage de {len(issues)} ticket(s) sur {total} au total : "
-            "résultat tronqué (voir max_result dans la config).[/yellow]"
+            f"[yellow]Tickets {start + 1}-{start + len(issues)} sur {total}. Suite : --start {start + len(issues)}[/yellow]"
         )
 
 

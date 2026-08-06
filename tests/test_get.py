@@ -126,7 +126,7 @@ def test_raw_jql_conflicts_with_the_filter_options(mock_jira_client: MagicMock) 
     mock_jira_client.search_issues.assert_not_called()
 
 
-def test_issues_truncated_warns(mock_jira_client: MagicMock) -> None:
+def test_issues_more_to_come_suggests_the_next_page(mock_jira_client: MagicMock) -> None:
     mock_jira_client.search_issues.return_value = ResultList(
         [make_issue(key="ST-1")],
         _total=42,
@@ -135,8 +135,42 @@ def test_issues_truncated_warns(mock_jira_client: MagicMock) -> None:
     result = runner.invoke(app, ["get", "issues"])
 
     assert result.exit_code == 0
-    assert "tronqué" in result.output
-    assert "1 ticket(s) sur 42" in result.output
+    assert "Tickets 1-1 sur 42" in result.output
+    assert "--start 1" in result.output
+
+
+def test_issues_pagination_is_passed_to_jira(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.search_issues.return_value = ResultList([make_issue(key="ST-11")], _total=42)
+
+    page_size = 10
+
+    result = runner.invoke(app, ["get", "issues", "--limit", str(page_size), "--start", str(page_size)])
+
+    assert result.exit_code == 0
+    assert mock_jira_client.search_issues.call_args.kwargs["startAt"] == page_size
+    assert mock_jira_client.search_issues.call_args.kwargs["maxResults"] == page_size
+    assert "Tickets 11-11 sur 42" in result.output
+    assert "--start 11" in result.output
+
+
+def test_issues_past_the_last_page(mock_jira_client: MagicMock) -> None:
+    """An out-of-range --start returns nothing, which shouldn't look like an empty project."""
+    mock_jira_client.search_issues.return_value = ResultList([], _total=42)
+
+    result = runner.invoke(app, ["get", "issues", "--start", "100"])
+
+    assert result.exit_code == 0
+    assert "Aucun ticket à partir de l'index 100" in result.output
+
+
+def test_issues_limit_defaults_to_the_config(mock_jira_client: MagicMock) -> None:
+    configured_max_result = 50
+    mock_jira_client.search_issues.return_value = ResultList([make_issue(key="ST-1")], _total=1)
+
+    result = runner.invoke(app, ["get", "issues"])
+
+    assert result.exit_code == 0
+    assert mock_jira_client.search_issues.call_args.kwargs["maxResults"] == configured_max_result
 
 
 def test_issues_not_truncated_no_warning(mock_jira_client: MagicMock) -> None:
