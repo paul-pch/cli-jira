@@ -5,8 +5,9 @@ import typer
 
 from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
-from app.utils.exceptions import InvalidJiraStatusError, NothingToUpdateError
+from app.utils.exceptions import NothingToUpdateError
 from app.utils.issue_fields import ISSUE_FIELDS, IssueFields
+from app.utils.jira import transition_to_status
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -44,11 +45,7 @@ def issue(
     issue: Issue = jira.issue(key)
 
     if status:
-        transitions = jira.transitions(issue)
-        transition_id = next((t["id"] for t in transitions if t["name"].lower() == status.lower()), None)
-        if not transition_id:
-            raise InvalidJiraStatusError(status, [t["name"] for t in transitions])
-        jira.transition_issue(issue, transition_id)
+        transition_to_status(jira, issue, status)
 
     if description_file:
         description = utils.description_to_jira(Path(description_file).read_text(encoding="utf-8").strip())

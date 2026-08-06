@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock
 
+from app.utils.issue_fields import ISSUE_FIELDS
 from main import app
 from tests.conftest import make_issue, runner
 
@@ -72,6 +73,47 @@ def test_issue_with_owner_no_match(mock_jira_client: MagicMock) -> None:
     assert result.exit_code == 1
     assert "aucun utilisateur" in result.output
     mock_jira_client.create_issue.assert_not_called()
+
+
+def test_issue_with_status(mock_jira_client: MagicMock) -> None:
+    created = make_issue(key="ST-42")
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = created
+    mock_jira_client.transitions.return_value = [{"id": "31", "name": "en cours"}]
+    mock_jira_client.issue.return_value = make_issue(key="ST-42", status="en cours")
+
+    result = runner.invoke(app, ["create", "issue", "Titre", "--status", "EN COURS"])
+
+    assert result.exit_code == 0
+    mock_jira_client.transition_issue.assert_called_once_with(created, "31")
+    mock_jira_client.issue.assert_called_once_with("ST-42", fields=ISSUE_FIELDS)
+    assert "en cours" in result.output
+
+
+def test_issue_with_unknown_status(mock_jira_client: MagicMock) -> None:
+    """The issue is already created at that point — only the transition fails."""
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = make_issue(key="ST-42")
+    mock_jira_client.transitions.return_value = [{"id": "31", "name": "en cours"}]
+
+    result = runner.invoke(app, ["create", "issue", "Titre", "--status", "Statut inconnu"])
+
+    assert result.exit_code == 1
+    assert "Statut inconnu" in result.output
+    assert "en cours" in result.output
+    mock_jira_client.create_issue.assert_called_once()
+    mock_jira_client.transition_issue.assert_not_called()
+
+
+def test_issue_without_status_does_not_transition(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = make_issue()
+
+    result = runner.invoke(app, ["create", "issue", "Titre"])
+
+    assert result.exit_code == 0
+    mock_jira_client.transitions.assert_not_called()
+    mock_jira_client.transition_issue.assert_not_called()
 
 
 def test_issue_with_estimate(mock_jira_client: MagicMock) -> None:

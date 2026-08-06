@@ -49,7 +49,6 @@ Fonctionnalités en attente d'implémentation :
 
 ### `create`
 
-* [ ] CREATE - Passer le status du ticket directement à la création
 * [ ] CREATE - Ajouter un lien externe (remote link) à la création
 
 ### `edit`

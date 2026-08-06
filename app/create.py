@@ -5,8 +5,8 @@ import typer
 
 from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
-from app.utils.issue_fields import IssueFields
-from app.utils.jira import resolve_assignee
+from app.utils.issue_fields import ISSUE_FIELDS, IssueFields
+from app.utils.jira import resolve_assignee, transition_to_status
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -46,10 +46,15 @@ def issue(
         Optional[str],
         typer.Option(help="Time estimate in Jira format (e.g. 10m, 1h, 1d, 1w)"),
     ] = None,
+    status: Annotated[
+        Optional[str],
+        typer.Option(help="Status to move the issue to right after creation. Example : 'EN COURS'"),
+    ] = None,
 ) -> None:
     """Create an issue.
 
     Example: jira create issue <title> --labels <text>
+    Example: jira create issue <title> --status 'EN COURS'
     """
     jira = ctx.obj.jira_client
 
@@ -78,4 +83,9 @@ def issue(
     )
 
     new_issue: Issue = jira.create_issue(fields=fields.to_jira())
+
+    if status:
+        transition_to_status(jira, new_issue, status)
+        new_issue = jira.issue(new_issue.key, fields=ISSUE_FIELDS)
+
     display.display_issue(new_issue)

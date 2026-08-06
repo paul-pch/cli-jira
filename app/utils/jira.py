@@ -1,7 +1,7 @@
 import typer
 from jira import JIRA, Issue, JIRAError
 
-from app.utils.exceptions import AmbiguousUserError, IssueTypeNotFoundError, UserNotFoundError
+from app.utils.exceptions import AmbiguousUserError, InvalidJiraStatusError, IssueTypeNotFoundError, UserNotFoundError
 
 
 def get_jira_client(required_envs: dict[str, str]) -> JIRA:
@@ -26,6 +26,17 @@ def get_statuses_for_issue_type(jira: JIRA, project: str, issue_type: str) -> li
         raise IssueTypeNotFoundError(issue_type, project)
 
     return [status["name"] for status in matching["statuses"]]
+
+
+def transition_to_status(jira: JIRA, issue: Issue, status: str) -> None:
+    """Move an issue to a status, matching the transition name case-insensitively."""
+    transitions = jira.transitions(issue)
+    transition_id = next((t["id"] for t in transitions if t["name"].lower() == status.lower()), None)
+
+    if not transition_id:
+        raise InvalidJiraStatusError(status, [t["name"] for t in transitions])
+
+    jira.transition_issue(issue, transition_id)
 
 
 def resolve_assignee(jira: JIRA, owned: bool, owner: str | None) -> dict[str, str] | None:
