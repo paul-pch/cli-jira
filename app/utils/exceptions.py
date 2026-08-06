@@ -43,6 +43,14 @@ class IssueTypeNotFoundError(CliJiraError):
         super().__init__(f'type de ticket "{issue_type}" introuvable pour le projet {project}')
 
 
+class InvalidRemoteLinkError(CliJiraError):
+    """Raised when a --link value isn't a usable URL."""
+
+    def __init__(self, raw: str) -> None:
+        self.raw = raw
+        super().__init__(f"lien invalide : {raw}. Attendu : une URL http(s), éventuellement préfixée par `Titre=`")
+
+
 class NothingToUpdateError(CliJiraError):
     """Raised when an edit command is called without any field to change."""
 

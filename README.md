@@ -47,10 +47,6 @@ uv run python -m main get projects
 
 Fonctionnalités en attente d'implémentation :
 
-### `create`
-
-* [ ] CREATE - Ajouter un lien externe (remote link) à la création
-
 ### `edit`
 
 * [ ] UPDATE - Editer la liste des labels partielle ou entière

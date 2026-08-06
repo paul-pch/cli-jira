@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 from app.utils.issue_fields import ISSUE_FIELDS
 from main import app
@@ -114,6 +114,44 @@ def test_issue_without_status_does_not_transition(mock_jira_client: MagicMock) -
     assert result.exit_code == 0
     mock_jira_client.transitions.assert_not_called()
     mock_jira_client.transition_issue.assert_not_called()
+
+
+def test_issue_with_links(mock_jira_client: MagicMock) -> None:
+    created = make_issue(key="ST-42")
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = created
+    mock_jira_client.remote_links.return_value = []
+
+    result = runner.invoke(
+        app,
+        ["create", "issue", "Titre", "--link", "https://example.com", "--link", "MR=https://gitlab.com/x/1"],
+    )
+
+    assert result.exit_code == 0
+    assert mock_jira_client.add_simple_link.call_args_list == [
+        call(created, object={"url": "https://example.com", "title": "https://example.com"}),
+        call(created, object={"url": "https://gitlab.com/x/1", "title": "MR"}),
+    ]
+
+
+def test_issue_with_invalid_link_creates_nothing(mock_jira_client: MagicMock) -> None:
+    """The link is parsed up front so a typo doesn't leave a half-configured issue behind."""
+    result = runner.invoke(app, ["create", "issue", "Titre", "--link", "example.com"])
+
+    assert result.exit_code == 1
+    assert "lien invalide" in result.output
+    mock_jira_client.create_issue.assert_not_called()
+
+
+def test_issue_without_link_does_not_touch_remote_links(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = make_issue()
+
+    result = runner.invoke(app, ["create", "issue", "Titre"])
+
+    assert result.exit_code == 0
+    mock_jira_client.add_simple_link.assert_not_called()
+    mock_jira_client.remote_links.assert_not_called()
 
 
 def test_issue_with_estimate(mock_jira_client: MagicMock) -> None:

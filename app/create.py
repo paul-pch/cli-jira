@@ -7,6 +7,7 @@ from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
 from app.utils.issue_fields import ISSUE_FIELDS, IssueFields
 from app.utils.jira import resolve_assignee, transition_to_status
+from app.utils.remote_links import add_remote_links, parse_remote_link
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -50,15 +51,23 @@ def issue(
         Optional[str],
         typer.Option(help="Status to move the issue to right after creation. Example : 'EN COURS'"),
     ] = None,
+    link: Annotated[
+        Optional[list[str]],
+        typer.Option(help="External link to attach. Either an URL or 'Titre=https://...'. Repeatable."),
+    ] = None,
 ) -> None:
     """Create an issue.
 
     Example: jira create issue <title> --labels <text>
     Example: jira create issue <title> --status 'EN COURS'
+    Example: jira create issue <title> --link 'MR=https://gitlab.com/x/-/merge_requests/1'
     """
     jira = ctx.obj.jira_client
 
     config = ctx.obj.config
+
+    # Parsed before creating anything, so a malformed link doesn't leave an issue behind.
+    remote_links = [parse_remote_link(raw) for raw in link or []]
 
     if description_file:
         description = utils.description_to_jira(Path(description_file).read_text(encoding="utf-8").strip())
@@ -84,8 +93,10 @@ def issue(
 
     new_issue: Issue = jira.create_issue(fields=fields.to_jira())
 
+    add_remote_links(jira, new_issue, remote_links)
+
     if status:
         transition_to_status(jira, new_issue, status)
         new_issue = jira.issue(new_issue.key, fields=ISSUE_FIELDS)
 
-    display.display_issue(new_issue)
+    display.display_issue(new_issue, remote_links=jira.remote_links(new_issue.key) if remote_links else None)
