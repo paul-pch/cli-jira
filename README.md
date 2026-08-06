@@ -49,7 +49,6 @@ Fonctionnalités en attente d'implémentation :
 
 ### `edit`
 
-* [ ] UPDATE - Réassigner un ticket (`--owner` / `--owned`, comme à la création)
 * [ ] UPDATE - Rattacher ou détacher un ticket de son parent
 * [ ] UPDATE - Logguer du temps passé (worklog), en plus de l'estimation
 * [ ] UPDATE - Lier deux tickets entre eux (blocks, relates to, duplicates)

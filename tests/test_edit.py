@@ -62,6 +62,59 @@ def test_title_with_other_fields_is_one_call(mock_jira_client: MagicMock) -> Non
     )
 
 
+def test_reassign_to_a_named_owner(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+    mock_jira_client.search_users.return_value = [MagicMock(accountId="acc-owner")]
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--owner", "michel"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={"assignee": {"id": "acc-owner"}}, update={})
+    mock_jira_client.myself.assert_not_called()
+
+
+def test_reassign_to_self(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--owned"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={"assignee": {"id": "acc-me"}}, update={})
+
+
+def test_other_edits_leave_the_assignee_alone(mock_jira_client: MagicMock) -> None:
+    """Without --owned/--owner the assignee must not be touched, unlike at creation."""
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--title", "Nouveau titre"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={"summary": "Nouveau titre"}, update={})
+    mock_jira_client.myself.assert_not_called()
+
+
+def test_unknown_owner_writes_nothing(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+    mock_jira_client.transitions.return_value = [{"id": "31", "name": "en cours"}]
+    mock_jira_client.search_users.return_value = []
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--owner", "personne", "--status", "en cours"])
+
+    assert result.exit_code == 1
+    assert "aucun utilisateur" in result.output
+    issue.update.assert_not_called()
+    mock_jira_client.transition_issue.assert_not_called()
+
+
 def test_comment_only(mock_jira_client: MagicMock) -> None:
     issue = make_issue(key="ST-1")
     mock_jira_client.issue.return_value = issue

@@ -7,7 +7,7 @@ from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
 from app.utils.exceptions import NothingToUpdateError
 from app.utils.issue_fields import ISSUE_FIELDS, IssueFields, label_operations
-from app.utils.jira import transition_to_status
+from app.utils.jira import resolve_assignee, transition_to_status
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -40,6 +40,11 @@ def issue(
         Optional[list[str]],
         typer.Option(help="Label to remove, keeping the other ones. Repeatable."),
     ] = None,
+    owned: Annotated[bool, typer.Option("--owned", help="Reassign the issue to the current author")] = False,
+    owner: Annotated[
+        Optional[str],
+        typer.Option(help="New owner of the issue (override --owned)"),
+    ] = None,
 ) -> None:
     """Edit an issue.
 
@@ -47,13 +52,16 @@ def issue(
     Example: jira edit issue ST-1060 --title 'Nouveau titre'
     Example: jira edit issue ST-1060 --description 'Nouvelle description'
     Example: jira edit issue ST-1060 --labels OPS --labels Cycle11 --remove-labels Cycle10
+    Example: jira edit issue ST-1060 --owner michel
     """
-    if not any([title, status, comment, description, description_file, estimate, labels, remove_labels]):
+    if not any([title, status, comment, description, description_file, estimate, labels, remove_labels, owned, owner]):
         raise NothingToUpdateError
 
     jira = ctx.obj.jira_client
 
     issue: Issue = jira.issue(key)
+
+    assignee = resolve_assignee(jira, owned=owned, owner=owner)
 
     if status:
         transition_to_status(jira, issue, status)
@@ -61,7 +69,7 @@ def issue(
     if description_file:
         description = utils.description_to_jira(Path(description_file).read_text(encoding="utf-8").strip())
 
-    fields = IssueFields(summary=title, description=description, estimate=estimate).to_jira()
+    fields = IssueFields(summary=title, description=description, estimate=estimate, assignee=assignee).to_jira()
     operations = label_operations(labels or [], remove_labels or [])
 
     if fields or operations:
