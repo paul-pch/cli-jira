@@ -5,7 +5,7 @@ import typer
 
 from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
-from app.utils.exceptions import NothingToUpdateError
+from app.utils.exceptions import ConflictingParentOptionsError, NothingToUpdateError
 from app.utils.issue_fields import ISSUE_FIELDS, IssueFields, label_operations
 from app.utils.jira import resolve_assignee, transition_to_status
 
@@ -45,6 +45,11 @@ def issue(
         Optional[str],
         typer.Option(help="New owner of the issue (override --owned)"),
     ] = None,
+    parent: Annotated[
+        Optional[str],
+        typer.Option(help="Key of the parent issue to attach to (e.g., PROJ-123)"),
+    ] = None,
+    no_parent: Annotated[bool, typer.Option("--no-parent", help="Detach the issue from its parent")] = False,
 ) -> None:
     """Edit an issue.
 
@@ -53,9 +58,15 @@ def issue(
     Example: jira edit issue ST-1060 --description 'Nouvelle description'
     Example: jira edit issue ST-1060 --labels OPS --labels Cycle11 --remove-labels Cycle10
     Example: jira edit issue ST-1060 --owner michel
+    Example: jira edit issue ST-1060 --parent ST-XXXX
     """
-    if not any([title, status, comment, description, description_file, estimate, labels, remove_labels, owned, owner]):
+    changes = [title, status, comment, description, description_file, estimate, labels, remove_labels, owned, owner]
+
+    if not any([*changes, parent, no_parent]):
         raise NothingToUpdateError
+
+    if parent and no_parent:
+        raise ConflictingParentOptionsError
 
     jira = ctx.obj.jira_client
 
@@ -69,7 +80,18 @@ def issue(
     if description_file:
         description = utils.description_to_jira(Path(description_file).read_text(encoding="utf-8").strip())
 
-    fields = IssueFields(summary=title, description=description, estimate=estimate, assignee=assignee).to_jira()
+    fields = IssueFields(
+        summary=title,
+        description=description,
+        estimate=estimate,
+        assignee=assignee,
+        parent=parent,
+    ).to_jira()
+
+    # IssueFields uses None to mean "leave untouched", so the explicit null Jira wants
+    # for a detach is set here rather than through the builder.
+    if no_parent:
+        fields["parent"] = None
     operations = label_operations(labels or [], remove_labels or [])
 
     if fields or operations:

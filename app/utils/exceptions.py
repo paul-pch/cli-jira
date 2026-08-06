@@ -51,6 +51,13 @@ class InvalidRemoteLinkError(CliJiraError):
         super().__init__(f"lien invalide : {raw}. Attendu : une URL http(s), éventuellement préfixée par `Titre=`")
 
 
+class ConflictingParentOptionsError(CliJiraError):
+    """Raised when attaching and detaching a parent are asked for at once."""
+
+    def __init__(self) -> None:
+        super().__init__("--parent et --no-parent sont contradictoires")
+
+
 class NothingToUpdateError(CliJiraError):
     """Raised when an edit command is called without any field to change."""
 

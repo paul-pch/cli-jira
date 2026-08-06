@@ -115,6 +115,37 @@ def test_unknown_owner_writes_nothing(mock_jira_client: MagicMock) -> None:
     mock_jira_client.transition_issue.assert_not_called()
 
 
+def test_attach_to_a_parent(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--parent", "ST-100"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={"parent": {"key": "ST-100"}}, update={})
+
+
+def test_detach_from_its_parent(mock_jira_client: MagicMock) -> None:
+    """Jira clears the link on an explicit null, which IssueFields can't express (None means untouched)."""
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--no-parent"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={"parent": None}, update={})
+
+
+def test_parent_and_no_parent_conflict(mock_jira_client: MagicMock) -> None:
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--parent", "ST-100", "--no-parent"])
+
+    assert result.exit_code == 1
+    assert "contradictoires" in result.output
+    mock_jira_client.issue.assert_not_called()
+
+
 def test_comment_only(mock_jira_client: MagicMock) -> None:
     issue = make_issue(key="ST-1")
     mock_jira_client.issue.return_value = issue
