@@ -4,6 +4,7 @@ from typing import Any
 from jira import Issue
 
 UNASSIGNED = "Non assigné"
+UNKNOWN_AUTHOR = "Auteur inconnu"
 
 
 def _timetracking(timetracking: Any, *keys: str) -> str | None:  # noqa: ANN401
@@ -43,6 +44,25 @@ def _links(issuelinks: Any) -> list[tuple[str, str]]:  # noqa: ANN401
 
 
 @dataclass(frozen=True, slots=True)
+class CommentView:
+    author: str
+    created: str
+    body: str
+
+
+def _comments(comment_field: Any) -> list[CommentView]:  # noqa: ANN401
+    """Flatten the `comment` field, which nests the actual entries under `.comments`."""
+    return [
+        CommentView(
+            author=getattr(getattr(comment, "author", None), "displayName", UNKNOWN_AUTHOR),
+            created=(getattr(comment, "created", None) or "")[:10],
+            body=getattr(comment, "body", None) or "",
+        )
+        for comment in getattr(comment_field, "comments", None) or []
+    ]
+
+
+@dataclass(frozen=True, slots=True)
 class IssueView:
     """An issue reduced to what the console shows, with every optional field resolved once."""
 
@@ -58,6 +78,7 @@ class IssueView:
     time_spent: str | None
     remaining_estimate: str | None
     links: list[tuple[str, str]]
+    comments: list[CommentView]
 
     @classmethod
     def from_issue(cls, issue: Issue) -> "IssueView":
@@ -79,4 +100,5 @@ class IssueView:
             time_spent=_timetracking(timetracking, "timeSpent"),
             remaining_estimate=_timetracking(timetracking, "remainingEstimate"),
             links=_links(getattr(fields, "issuelinks", None)),
+            comments=_comments(getattr(fields, "comment", None)),
         )

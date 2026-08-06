@@ -64,6 +64,15 @@ def display_issue(issue: Issue, remote_links: list[Any] | None = None) -> None:
             links_table.add_row(relation, other_key)
         console.print(Panel(links_table, title="Issue Links"))
 
+    for comment in view.comments:
+        console.print(
+            Panel(
+                Markdown(utils.format_description(comment.body)),
+                title=f"{comment.author} — {comment.created}",
+                title_align="left",
+            )
+        )
+
     if remote_links:
         links_table = Table(box=box.SIMPLE, show_header=False, padding=(0, 0), expand=True)
         links_table.add_column(style="bold")

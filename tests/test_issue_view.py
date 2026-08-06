@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
-from app.utils.issue_view import UNASSIGNED, IssueView
-from tests.conftest import make_issue, make_issue_link
+from app.utils.issue_view import UNASSIGNED, UNKNOWN_AUTHOR, IssueView
+from tests.conftest import make_comment, make_issue, make_issue_link
 
 
 class TestIssueView:
@@ -89,3 +89,31 @@ class TestIssueViewLinks:
         issue = make_issue(issuelinks=[make_issue_link(relation="is blocked by", other_key="ST-3", outward=False)])
 
         assert IssueView.from_issue(issue).links == [("is blocked by", "ST-3")]
+
+
+class TestIssueViewComments:
+    @staticmethod
+    def test_no_comment() -> None:
+        assert IssueView.from_issue(make_issue()).comments == []
+
+    @staticmethod
+    def test_comments_are_flattened_from_the_nested_field() -> None:
+        issue = make_issue(comments=[make_comment(author="Jean Dupont", body="Bonjour")])
+
+        comment = IssueView.from_issue(issue).comments[0]
+
+        assert comment.author == "Jean Dupont"
+        assert comment.body == "Bonjour"
+        assert comment.created == "2024-01-02"
+
+    @staticmethod
+    def test_comment_without_author() -> None:
+        issue = make_issue(comments=[make_comment(author=None)])
+
+        assert IssueView.from_issue(issue).comments[0].author == UNKNOWN_AUTHOR
+
+    @staticmethod
+    def test_order_is_preserved() -> None:
+        issue = make_issue(comments=[make_comment(body="Premier"), make_comment(body="Second")])
+
+        assert [c.body for c in IssueView.from_issue(issue).comments] == ["Premier", "Second"]

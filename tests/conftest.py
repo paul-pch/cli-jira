@@ -35,6 +35,7 @@ def make_issue(
     created: str = "2024-01-01T00:00:00.000+0000",
     timetracking: dict | None = None,
     issuelinks: list | None = None,
+    comments: list | None = None,
 ) -> SimpleNamespace:
     """Build a fake `jira.Issue` shaped exactly as `app/utils/display.py` expects it."""
     assignee = SimpleNamespace(displayName=assignee_name) if assignee_name else None
@@ -48,8 +49,22 @@ def make_issue(
         created=created,
         timetracking=timetracking or {},
         issuelinks=issuelinks or [],
+        comment=SimpleNamespace(comments=comments or []),
     )
     return SimpleNamespace(key=key, fields=fields)
+
+
+def make_comment(
+    author: str | None = "Jean Dupont",
+    body: str = "Un commentaire",
+    created: str = "2024-01-02T00:00:00.000+0000",
+) -> SimpleNamespace:
+    """Build a fake comment, shaped as `IssueView._comments` expects it."""
+    return SimpleNamespace(
+        author=SimpleNamespace(displayName=author) if author else None,
+        body=body,
+        created=created,
+    )
 
 
 def make_issue_link(relation: str = "blocks", other_key: str = "ST-2", *, outward: bool = True) -> SimpleNamespace:

@@ -5,7 +5,7 @@ from jira.client import ResultList
 
 from app.utils.issue_fields import ISSUE_FIELDS
 from main import app
-from tests.conftest import make_issue, runner
+from tests.conftest import make_comment, make_issue, runner
 
 
 def test_projects(mock_jira_client: MagicMock) -> None:
@@ -31,6 +31,19 @@ def test_issue(mock_jira_client: MagicMock) -> None:
     assert "ST-1060" in result.output
     assert "Titre du ticket" in result.output
     mock_jira_client.issue.assert_called_once_with("ST-1060", fields=ISSUE_FIELDS)
+
+
+def test_issue_shows_its_comments(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.issue.return_value = make_issue(
+        comments=[make_comment(author="Jean Dupont", body="Un commentaire utile")],
+    )
+    mock_jira_client.remote_links.return_value = []
+
+    result = runner.invoke(app, ["get", "issue", "ST-1"])
+
+    assert result.exit_code == 0
+    assert "Jean Dupont" in result.output
+    assert "Un commentaire utile" in result.output
 
 
 def test_issue_shows_the_estimate(mock_jira_client: MagicMock) -> None:
