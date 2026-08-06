@@ -6,6 +6,14 @@ class MissingEnvVarError(Exception):
         super().__init__(f"Variables manquantes : {', '.join(missing)}")
 
 
+class InvalidConfigError(Exception):
+    """Raised when the config file is missing required keys."""
+
+    def __init__(self, missing: list[str]) -> None:
+        self.missing = missing
+        super().__init__(f"Clés manquantes dans la section [default] : {', '.join(missing)}")
+
+
 class InvalidJiraStatusError(Exception):
     """Raised when a Jira issue status is invalid."""
 

@@ -53,18 +53,18 @@ def issue(
     """
     jira = ctx.obj.jira_client
 
+    config = ctx.obj.config
+
     if description_file:
         description = utils.description_to_jira(Path(description_file).read_text(encoding="utf-8").strip())
-    if not issuetype:
-        issuetype = ctx.obj.config["default"]["issue_type"]
+
+    issuetype = config.resolve(issuetype, "issue_type")
+    project = config.resolve(project, "project")
 
     if not labels:
         labels = []
 
-    labels += ctx.obj.config["default"]["labels"]
-
-    if not project:
-        project = ctx.obj.config["default"]["project"]
+    labels += config.default.labels
 
     fields: dict[str, Any] = {
         "project": {"key": project},

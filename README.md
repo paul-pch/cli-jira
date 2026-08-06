@@ -45,9 +45,34 @@ uv run python -m main get projects
 
 ## Todo
 
+Fonctionnalités en attente d'implémentation :
+
+### `create`
+
 * [ ] CREATE - Passer le status du ticket directement à la création
+* [ ] CREATE - Ajouter un lien externe (remote link) à la création
+
+### `edit`
+
 * [ ] UPDATE - Editer la liste des labels partielle ou entière
-* [ ] UPDATE - Pouvoir passer un ticket dans un status "terminé" ou équivalent facilement
+* [ ] UPDATE - Modifier le titre (summary) d'un ticket
+* [ ] UPDATE - Réassigner un ticket (`--owner` / `--owned`, comme à la création)
+* [ ] UPDATE - Rattacher ou détacher un ticket de son parent
+* [ ] UPDATE - Logguer du temps passé (worklog), en plus de l'estimation
+* [ ] UPDATE - Lier deux tickets entre eux (blocks, relates to, duplicates)
+
+### `get`
+
+* [ ] GET - Filtrer `get issues` par projet, statut ou assigné (options CLI)
+* [ ] GET - Passer une requête JQL brute à `get issues`
+* [ ] GET - Paginer les résultats (`--limit` / `--start`) au lieu de tronquer à `max_result`
+* [ ] GET - Afficher les commentaires d'un ticket
+* [ ] GET - Lister les statuts d'un type de ticket autre que celui par défaut
+
+### Divers
+
+* [ ] DELETE - Supprimer un ticket
+* [ ] CLI - Complétion shell (zsh / bash)
 
 
 ## Development
@@ -56,8 +81,10 @@ The project includes a Makefile, driven by `uv`, with the following targets:
 
 - `make install`: Sync the uv-managed virtual environment with `uv.lock`
 - `make test`: Run tests with coverage
-- `make lint`: Check linting and formatting with ruff
+- `make lint`: Check linting and formatting with ruff (rewrites files)
+- `make lint-check`: Read-only lint, exactly as CI runs it
 - `make format`: Auto-fix linting and formatting with ruff
+- `make validate`: Full gate before pushing — `lint-check` + `test`, same checks as CI
 - `make build`: Create standalone executable
 - `make integrate`: Add executable to PATH by modifying ~/.zshrc and reloading the shell configuration
 - `make upgrade`: Upgrade dependencies and refresh `uv.lock`

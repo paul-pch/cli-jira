@@ -1,6 +1,6 @@
 # Python CLI Project Makefile — driven by uv (https://docs.astral.sh/uv/)
 
-.PHONY: all default install build integrate test lint format upgrade clean
+.PHONY: all default install build integrate test lint lint-check format validate upgrade clean
 
 default: install build integrate
 
@@ -28,9 +28,18 @@ lint:
 	uv run ruff check .
 	uv run ruff format .
 
+# Read-only linting, exactly as CI runs it (no file is rewritten)
+lint-check:
+	uv run ruff check .
+	uv run ruff format --check .
+
 format:
 	uv run ruff format .
 	uv run ruff check --fix .
+
+# Full gate before pushing: same checks as the CI workflow
+validate: lint-check test
+	@echo "Validation passed"
 
 upgrade:
 	uv lock --upgrade

@@ -44,8 +44,8 @@ def issues(
     """
     jira = ctx.obj.jira_client
 
-    project = ctx.obj.config["default"]["project"]
-    closed_statuses = ctx.obj.config["default"]["definition_closed"]
+    project = ctx.obj.config.default.project
+    closed_statuses = ctx.obj.config.default.definition_closed
     status_closed_list_str = ", ".join(f'"{s}"' for s in closed_statuses)
 
     conditions = [f'project = "{project}"']
@@ -57,7 +57,7 @@ def issues(
     issues: list[Issue] = jira.search_issues(
         jql,
         startAt=0,
-        maxResults=ctx.obj.config["default"]["max_result"],
+        maxResults=ctx.obj.config.default.max_result,
         fields="key,summary,assignee,status,created",
     )
 
@@ -98,11 +98,11 @@ def status(
     Example: jira get status ST-1060
     """
     if issue_key is None:
-        issue_type = ctx.obj.config["default"]["issue_type"]
+        issue_type = ctx.obj.config.default.issue_type
         statuses_list = get_statuses_for_issue_type(ctx, issue_type)
 
         if statuses_list is None:
-            project = ctx.obj.config["default"]["project"]
+            project = ctx.obj.config.default.project
             console.print(f'Type de ticket "{issue_type}" introuvable pour le projet {project}.', style="yellow")
             raise typer.Exit(code=1)
 

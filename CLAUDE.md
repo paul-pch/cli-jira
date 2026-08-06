@@ -20,7 +20,7 @@ app/utils/
   utils.py               # Env var checks, config file discovery, Markdown <-> Jira wiki conversion
   errors.py              # @handle_jira_errors decorator — catches JIRAError/ConnectionError etc.
   exceptions.py          # Custom exceptions (MissingEnvVarError, InvalidJiraStatusError)
-  config_types.py        # TypedDicts: AppConfig, DefaultConfig
+  config_types.py        # Frozen dataclasses: AppConfig (+ .resolve), DefaultConfig (+ .from_toml)
   app_state.py           # AppState dataclass — injected into Typer ctx.obj
 config.toml              # Local config: default project, issue type, closed statuses, labels
 tests/                   # pytest — fully mocked, no real Jira needed
@@ -28,9 +28,9 @@ tests/                   # pytest — fully mocked, no real Jira needed
 
 Key patterns:
 
-- **Everything flows through `ctx.obj`.** The `main.py` callback runs before every subcommand: it validates env vars, loads the TOML config, builds the JIRA client, and stores an `AppState` in `ctx.obj`. Commands never build a client themselves — they read `ctx.obj.jira_client` and `ctx.obj.config["default"][...]`.
+- **Everything flows through `ctx.obj`.** The `main.py` callback runs before every subcommand: it validates env vars, loads the TOML config, builds the JIRA client, and stores an `AppState` in `ctx.obj`. Commands never build a client themselves — they read `ctx.obj.jira_client` and `ctx.obj.config.default.<key>`.
 - **Every command is decorated with `@handle_jira_errors`**, which converts Jira/network exceptions into a one-line CLI error and `exit 1`. Order matters: `@app.command()` first, then `@handle_jira_errors`.
-- **Config values are defaults, not constants.** Options like `--project`, `--issuetype`, `--labels` fall back to `config.toml` when omitted (see `create.py`). `labels` is additive: CLI labels are appended to the configured ones.
+- **Config values are defaults, not constants.** Options like `--project`, `--issuetype`, `--labels` fall back to `config.toml` when omitted. Use `ctx.obj.config.resolve(<cli_option>, "<config_key>")` for that fallback — only `None` falls back, so an explicit `0`/`""` from the CLI is honoured. `labels` is additive: CLI labels are appended to the configured ones.
 - **Descriptions cross a format boundary.** Input goes through `utils.description_to_jira()` (Markdown → Jira wiki markup) on write; output goes through `utils.format_description()` (Jira wiki → Markdown) before Rich renders it. Any new description-carrying command must do the same.
 - `get.status` branches: no argument → available statuses for the default issue type (via the undocumented `project/{key}/statuses` endpoint, reached with `jira._get_json`); with an issue key → available transitions for that issue.
 - Status edits are name-based: `edit.issue --status` matches the transition name case-insensitively and raises `InvalidJiraStatusError` if no transition matches.
@@ -47,7 +47,9 @@ All commands use `uv run` inside the managed venv.
 make install              # Sync dependencies (uv sync --locked)
 make test                 # Run tests with coverage (pytest --cov, HTML report in coverage-report/)
 make lint                 # ruff check + ruff format (NOTE: rewrites files; CI uses --check)
+make lint-check           # ruff check + ruff format --check (read-only, CI parity)
 make format               # ruff format + ruff check --fix
+make validate             # lint-check + test — run this before pushing
 make build                # PyInstaller standalone binary (dist/jira)
 make integrate            # Copy config.toml to ~/.config/jira/ and add dist/ to PATH via ~/.zshrc
 make all                  # install + test + build + integrate
@@ -85,7 +87,7 @@ Tests are fully mocked — no Jira server, no network, no secrets.
 
 - **Env vars** (all required, checked in the callback): `JIRA_URL`, `JIRA_EMAIL`, `JIRA_TOKEN`. The token is an Atlassian **API token**, not a password.
 - **Config file**: searched in order — `./config.toml`, `~/.config/jira/config.toml`, `/etc/jira/config.toml`. The cwd copy wins, which matters when running from the repo root vs. anywhere else.
-- The `[default]` section defines: project key, default issue type, max results, closed statuses (used to filter `get issues`), and default labels. Keep `DefaultConfig` in `config_types.py` in sync when adding keys.
+- The `[default]` section defines: project key, default issue type, max results, closed statuses (used to filter `get issues`), and default labels. Keep `DefaultConfig` in `config_types.py` in sync when adding keys — `DefaultConfig.from_toml` validates that every field is present and raises `InvalidConfigError` (rendered by the callback) otherwise.
 
 ## CI
 
