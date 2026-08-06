@@ -91,7 +91,7 @@ champs demandés à Jira a déjà divergé entre `get.py` et `edit.py`
 **Action** — un `IssueFields` (dataclass + `to_jira()`) et une constante
 `ISSUE_FIELDS` unique pour la liste des champs récupérés.
 
-## 7. Normaliser l'objet affiché
+## 7. Normaliser l'objet affiché (fait)
 
 **Problème** — `display.py` lit `issue.fields.*` directement, avec des `getattr`
 de secours dispersés. Conséquence déjà visible : `timetracking` est écrit par

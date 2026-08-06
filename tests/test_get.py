@@ -33,6 +33,17 @@ def test_issue(mock_jira_client: MagicMock) -> None:
     mock_jira_client.issue.assert_called_once_with("ST-1060", fields=ISSUE_FIELDS)
 
 
+def test_issue_shows_the_estimate(mock_jira_client: MagicMock) -> None:
+    """The estimate was fetched but never rendered."""
+    mock_jira_client.issue.return_value = make_issue(timetracking={"originalEstimate": "3h"})
+    mock_jira_client.remote_links.return_value = []
+
+    result = runner.invoke(app, ["get", "issue", "ST-1"])
+
+    assert result.exit_code == 0
+    assert "3h" in result.output
+
+
 def test_issues(mock_jira_client: MagicMock) -> None:
     mock_jira_client.search_issues.return_value = [
         make_issue(key="ST-1", summary="Premier ticket"),

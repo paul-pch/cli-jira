@@ -9,6 +9,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from app.utils import utils
+from app.utils.issue_view import IssueView
 
 console = Console()
 
@@ -24,30 +25,29 @@ def default_table() -> Table:
 
 
 def display_issue(issue: Issue, remote_links: list[Any] | None = None) -> None:
-    fields = issue.fields
+    view = IssueView.from_issue(issue)
 
     meta = Table(box=box.SIMPLE, show_header=False, padding=(0, 0))
     meta.add_column(style="bold cyan")
     meta.add_column()
 
-    assignee = fields.assignee.displayName if fields.assignee else "Unassigned"
-    labels = ", ".join(f'"{label}"' for label in fields.labels)
+    meta.add_row("Key", view.key)
+    meta.add_row("Type", view.issuetype)
+    meta.add_row("Status", view.status)
+    meta.add_row("Assignee", view.assignee)
+    meta.add_row("Labels", ", ".join(f'"{label}"' for label in view.labels))
+    meta.add_row("Created", view.created)
+    if view.estimate:
+        meta.add_row("Estimate", view.estimate)
 
-    meta.add_row("Key", issue.key)
-    meta.add_row("Type", fields.issuetype.name)
-    meta.add_row("Status", fields.status.name)
-    meta.add_row("Assignee", assignee)
-    meta.add_row("Labels", labels)
-    meta.add_row("Created", fields.created[:10])
-
-    content = Markdown(utils.format_description(fields.description)) if fields.description else "[italic]No description[/italic]"
+    content = Markdown(utils.format_description(view.description)) if view.description else "[italic]No description[/italic]"
 
     layout = Table(box=None, padding=0, expand=True)
     layout.add_column(width=40)
     layout.add_column(ratio=1)
     layout.add_row(
         Panel(meta, title="Details"),
-        Panel(content, title=fields.summary),
+        Panel(content, title=view.summary),
     )
 
     console.print(layout)
@@ -69,12 +69,8 @@ def display_issues(issues: list[Issue]) -> None:
     table.add_column("Assignee", min_width=20)
 
     for issue in issues:
-        table.add_row(
-            issue.key,
-            escape(issue.fields.summary),
-            issue.fields.status.name,
-            getattr(issue.fields.assignee, "displayName", "—"),
-        )
+        view = IssueView.from_issue(issue)
+        table.add_row(view.key, escape(view.summary), view.status, view.assignee)
     console.print(table)
 
 
