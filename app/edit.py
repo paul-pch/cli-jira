@@ -32,6 +32,10 @@ def issue(
         Optional[str],
         typer.Option(help="Time estimate in Jira format (e.g. 10m, 1h, 1d, 1w)"),
     ] = None,
+    worklog: Annotated[
+        Optional[str],
+        typer.Option(help="Time actually spent, logged as a worklog entry (e.g. 10m, 1h, 1d, 1w)"),
+    ] = None,
     labels: Annotated[
         Optional[list[str]],
         typer.Option(help="Label to add, keeping the existing ones. Repeatable."),
@@ -59,8 +63,9 @@ def issue(
     Example: jira edit issue ST-1060 --labels OPS --labels Cycle11 --remove-labels Cycle10
     Example: jira edit issue ST-1060 --owner michel
     Example: jira edit issue ST-1060 --parent ST-XXXX
+    Example: jira edit issue ST-1060 --worklog 2h
     """
-    changes = [title, status, comment, description, description_file, estimate, labels, remove_labels, owned, owner]
+    changes = [title, status, comment, description, description_file, estimate, worklog, labels, remove_labels, owned, owner]
 
     if not any([*changes, parent, no_parent]):
         raise NothingToUpdateError
@@ -99,6 +104,10 @@ def issue(
 
     if comment:
         jira.add_comment(issue, comment)
+
+    # A worklog is its own resource, not a field: Jira recomputes the remaining estimate from it.
+    if worklog:
+        jira.add_worklog(issue, timeSpent=worklog)
 
     issue = jira.issue(key, fields=ISSUE_FIELDS)
 

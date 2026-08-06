@@ -44,6 +44,15 @@ class TestIssueView:
         assert IssueView.from_issue(make_issue()).estimate is None
 
     @staticmethod
+    def test_time_spent_and_remaining() -> None:
+        view = IssueView.from_issue(
+            make_issue(timetracking={"originalEstimate": "1d", "timeSpent": "2h", "remainingEstimate": "6h"}),
+        )
+
+        assert view.time_spent == "2h"
+        assert view.remaining_estimate == "6h"
+
+    @staticmethod
     def test_missing_optional_fields_do_not_crash() -> None:
         """Jira omits fields that were never set, and `--fields` narrows the payload further."""
         bare = SimpleNamespace(

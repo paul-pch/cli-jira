@@ -146,6 +146,42 @@ def test_parent_and_no_parent_conflict(mock_jira_client: MagicMock) -> None:
     mock_jira_client.issue.assert_not_called()
 
 
+def test_worklog_only(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--worklog", "2h"])
+
+    assert result.exit_code == 0
+    mock_jira_client.add_worklog.assert_called_once_with(issue, timeSpent="2h")
+    issue.update.assert_not_called()
+
+
+def test_worklog_and_estimate_are_independent(mock_jira_client: MagicMock) -> None:
+    """The estimate is a field, the worklog a separate resource: both can be set at once."""
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--estimate", "1d", "--worklog", "2h"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={"timetracking": {"estimate": "1d"}}, update={})
+    mock_jira_client.add_worklog.assert_called_once_with(issue, timeSpent="2h")
+
+
+def test_no_worklog_by_default(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--title", "Nouveau titre"])
+
+    assert result.exit_code == 0
+    mock_jira_client.add_worklog.assert_not_called()
+
+
 def test_comment_only(mock_jira_client: MagicMock) -> None:
     issue = make_issue(key="ST-1")
     mock_jira_client.issue.return_value = issue

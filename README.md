@@ -49,7 +49,6 @@ Fonctionnalités en attente d'implémentation :
 
 ### `edit`
 
-* [ ] UPDATE - Logguer du temps passé (worklog), en plus de l'estimation
 * [ ] UPDATE - Lier deux tickets entre eux (blocks, relates to, duplicates)
 
 ### `get`

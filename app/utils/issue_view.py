@@ -6,18 +6,20 @@ from jira import Issue
 UNASSIGNED = "Non assigné"
 
 
-def _estimate(timetracking: Any) -> str | None:  # noqa: ANN401
-    """Read the original estimate, whatever shape Jira returned it in.
+def _timetracking(timetracking: Any, *keys: str) -> str | None:  # noqa: ANN401
+    """Read the first of `keys` present in the timetracking field, whatever shape Jira returned it in.
 
     The API hands back an object, while a plain dict is what gets written.
     """
     if not timetracking:
         return None
 
-    if isinstance(timetracking, dict):
-        return timetracking.get("originalEstimate") or timetracking.get("estimate")
+    for key in keys:
+        value = timetracking.get(key) if isinstance(timetracking, dict) else getattr(timetracking, key, None)
+        if value:
+            return value
 
-    return getattr(timetracking, "originalEstimate", None) or getattr(timetracking, "estimate", None)
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,12 +35,15 @@ class IssueView:
     created: str
     description: str | None
     estimate: str | None
+    time_spent: str | None
+    remaining_estimate: str | None
 
     @classmethod
     def from_issue(cls, issue: Issue) -> "IssueView":
         fields = issue.fields
         assignee = getattr(fields, "assignee", None)
         created = getattr(fields, "created", None) or ""
+        timetracking = getattr(fields, "timetracking", None)
 
         return cls(
             key=issue.key,
@@ -49,5 +54,7 @@ class IssueView:
             labels=list(getattr(fields, "labels", None) or []),
             created=created[:10],
             description=getattr(fields, "description", None),
-            estimate=_estimate(getattr(fields, "timetracking", None)),
+            estimate=_timetracking(timetracking, "originalEstimate", "estimate"),
+            time_spent=_timetracking(timetracking, "timeSpent"),
+            remaining_estimate=_timetracking(timetracking, "remainingEstimate"),
         )

@@ -39,6 +39,10 @@ def display_issue(issue: Issue, remote_links: list[Any] | None = None) -> None:
     meta.add_row("Created", view.created)
     if view.estimate:
         meta.add_row("Estimate", view.estimate)
+    if view.time_spent:
+        meta.add_row("Spent", view.time_spent)
+    if view.remaining_estimate:
+        meta.add_row("Remaining", view.remaining_estimate)
 
     content = Markdown(utils.format_description(view.description)) if view.description else "[italic]No description[/italic]"
 
