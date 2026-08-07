@@ -126,17 +126,26 @@ def status(
     issue_key: Annotated[
         Optional[str], typer.Argument(help="Le code du ticket. Si omis, statuts du type de ticket par défaut.")
     ] = None,
+    issue_type: Annotated[
+        Optional[str],
+        typer.Option(help="Type de ticket dont lister les statuts. Par défaut celui de config.toml."),
+    ] = None,
+    project: Annotated[
+        Optional[str],
+        typer.Option(help="Code du projet. Par défaut celui de config.toml."),
+    ] = None,
 ) -> None:
-    """Get available statuses for the default issue type, or transitions for a specific issue.
+    """Get available statuses for an issue type, or transitions for a specific issue.
 
     Example: jira get status
     Example: jira get status ST-1060
+    Example: jira get status --issue-type Bug
     """
     jira = ctx.obj.jira_client
 
     if issue_key is None:
-        issue_type = ctx.obj.config.default.issue_type
-        statuses_list = get_statuses_for_issue_type(jira, ctx.obj.config.default.project, issue_type)
+        issue_type = ctx.obj.config.resolve(issue_type, "issue_type")
+        statuses_list = get_statuses_for_issue_type(jira, ctx.obj.config.resolve(project, "project"), issue_type)
 
         display.display_tuples(columns=[issue_type], rows=[(s,) for s in statuses_list])
         return

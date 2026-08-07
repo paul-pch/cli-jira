@@ -228,6 +228,43 @@ def test_status_no_arg_uses_default_issue_type(mock_jira_client: MagicMock) -> N
     mock_jira_client._get_json.assert_called_once_with("project/ST/statuses")  # noqa: SLF001
 
 
+def test_status_for_another_issue_type(mock_jira_client: MagicMock) -> None:
+    mock_jira_client._get_json.return_value = [  # noqa: SLF001
+        {"name": "Story Technique", "statuses": [{"name": "A faire"}]},
+        {"name": "Bug", "statuses": [{"name": "Ouvert"}, {"name": "Fermé"}]},
+    ]
+
+    result = runner.invoke(app, ["get", "status", "--issue-type", "Bug"])
+
+    assert result.exit_code == 0
+    assert "Ouvert" in result.output
+    assert "Fermé" in result.output
+    assert "A faire" not in result.output
+
+
+def test_status_for_another_project(mock_jira_client: MagicMock) -> None:
+    mock_jira_client._get_json.return_value = [  # noqa: SLF001
+        {"name": "Story Technique", "statuses": [{"name": "A faire"}]},
+    ]
+
+    result = runner.invoke(app, ["get", "status", "--project", "OPS"])
+
+    assert result.exit_code == 0
+    mock_jira_client._get_json.assert_called_once_with("project/OPS/statuses")  # noqa: SLF001
+
+
+def test_status_unknown_issue_type(mock_jira_client: MagicMock) -> None:
+    mock_jira_client._get_json.return_value = [  # noqa: SLF001
+        {"name": "Bug", "statuses": [{"name": "Ouvert"}]},
+    ]
+
+    result = runner.invoke(app, ["get", "status", "--issue-type", "Épopée"])
+
+    assert result.exit_code == 1
+    assert "Épopée" in result.output
+    assert "introuvable" in result.output
+
+
 def test_status_no_arg_unknown_default_issue_type(mock_jira_client: MagicMock) -> None:
     mock_jira_client._get_json.return_value = [  # noqa: SLF001
         {"name": "Bug", "statuses": [{"name": "Ouvert"}]},

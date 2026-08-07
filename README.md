@@ -52,7 +52,6 @@ Fonctionnalités en attente d'implémentation :
 
 ### `get`
 
-* [ ] GET - Lister les statuts d'un type de ticket autre que celui par défaut
 
 ### Divers
 
