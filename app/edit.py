@@ -8,6 +8,7 @@ from app.utils.errors import handle_jira_errors
 from app.utils.exceptions import ConflictingParentOptionsError, NothingToUpdateError
 from app.utils.issue_fields import ISSUE_FIELDS, IssueFields, label_operations
 from app.utils.jira import link_issues, resolve_assignee, transition_to_status
+from app.utils.sprints import move_to_sprint, resolve_sprint
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -62,6 +63,10 @@ def issue(
         str,
         typer.Option(help="Relation carried by --link-issue, read from this issue. Example : 'blocks'"),
     ] = "Relates",
+    sprint: Annotated[
+        Optional[str],
+        typer.Option(help="Sprint où déplacer le ticket : son nom, son id, ou 'current' pour le sprint actif."),
+    ] = None,
 ) -> None:
     """Edit an issue.
 
@@ -73,8 +78,22 @@ def issue(
     Example: jira edit issue ST-1060 --parent ST-XXXX
     Example: jira edit issue ST-1060 --worklog 2h
     Example: jira edit issue ST-1060 --link-type blocks --link-issue ST-1061
+    Example: jira edit issue ST-1060 --sprint current
     """
-    changes = [title, status, comment, description, description_file, estimate, worklog, labels, remove_labels, owned, owner]
+    changes = [
+        title,
+        status,
+        comment,
+        description,
+        description_file,
+        estimate,
+        worklog,
+        labels,
+        remove_labels,
+        owned,
+        owner,
+        sprint,
+    ]
 
     if not any([*changes, parent, no_parent, link_issue]):
         raise NothingToUpdateError
@@ -120,6 +139,11 @@ def issue(
 
     if link_issue:
         link_issues(jira, issue, link_type, link_issue)
+
+    if sprint:
+        # The project comes from the issue, not from the config: an edit may target another one.
+        project = getattr(getattr(issue.fields, "project", None), "key", None) or ctx.obj.config.default.project
+        move_to_sprint(jira, issue, resolve_sprint(jira, project, ctx.obj.config.default.board, sprint))
 
     issue = jira.issue(key, fields=ISSUE_FIELDS)
 

@@ -89,6 +89,54 @@ class NothingToUpdateError(CliJiraError):
         super().__init__("aucune modification demandée")
 
 
+class SprintNotFoundError(CliJiraError):
+    """Raised when no open sprint matches the requested name."""
+
+    def __init__(self, sprint: str, available: list[str]) -> None:
+        self.sprint = sprint
+        self.available = available
+        message = f"sprint introuvable : {sprint}"
+        if available:
+            message += f". Sprints ouverts : {', '.join(available)}"
+        super().__init__(message)
+
+
+class AmbiguousSprintError(CliJiraError):
+    """Raised when several open sprints match the requested one."""
+
+    def __init__(self, sprint: str, available: list[str]) -> None:
+        self.sprint = sprint
+        self.available = available
+        super().__init__(f"plusieurs sprints correspondent à {sprint} : {', '.join(available)}. Précisez-le par son id")
+
+
+class NoActiveSprintError(CliJiraError):
+    """Raised when the active sprint is asked for and none is running."""
+
+    def __init__(self, project: str) -> None:
+        self.project = project
+        super().__init__(f"aucun sprint actif sur le projet {project}")
+
+
+class BoardNotFoundError(CliJiraError):
+    """Raised when no scrum board serves the project."""
+
+    def __init__(self, project: str, board: str | None) -> None:
+        self.project = project
+        self.board = board
+        wanted = f' "{board}"' if board else ""
+        super().__init__(f"tableau scrum{wanted} introuvable pour le projet {project}")
+
+
+class AmbiguousBoardError(CliJiraError):
+    """Raised when several scrum boards serve the project."""
+
+    def __init__(self, project: str, available: list[str]) -> None:
+        self.project = project
+        self.available = available
+        super().__init__(f"plusieurs tableaux scrum pour {project} : {', '.join(available)}. Renseignez `board` dans config.toml")
+
+
 class UserNotFoundError(CliJiraError):
     """Raised when no Jira user matches the requested owner."""
 

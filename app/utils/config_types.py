@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields
+from dataclasses import MISSING, dataclass, fields
 from typing import Any, TypeVar
 
 from app.utils.exceptions import InvalidConfigError
@@ -14,16 +14,21 @@ class DefaultConfig:
     user: str
     definition_closed: list[str]
     labels: list[str]
+    board: str | None = None  # only needed when several scrum boards serve the project
 
     @classmethod
     def from_toml(cls, section: dict[str, Any]) -> "DefaultConfig":
-        """Build the [default] section, reporting missing keys instead of raising a raw KeyError."""
-        expected = {f.name for f in fields(cls)}
+        """Build the [default] section, reporting missing keys instead of raising a raw KeyError.
 
-        if missing := sorted(expected - section.keys()):
+        A field carrying a default is optional in `config.toml`; the others must be present.
+        """
+        known = {f.name for f in fields(cls)}
+        required = {f.name for f in fields(cls) if f.default is MISSING}
+
+        if missing := sorted(required - section.keys()):
             raise InvalidConfigError(missing)
 
-        return cls(**{name: section[name] for name in expected})
+        return cls(**{name: section[name] for name in known & section.keys()})
 
 
 @dataclass(frozen=True, slots=True)

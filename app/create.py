@@ -2,17 +2,37 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Optional
 
 import typer
+from rich.console import Console
 
 from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
+from app.utils.exceptions import CliJiraError
 from app.utils.issue_fields import ISSUE_FIELDS, IssueFields
 from app.utils.jira import resolve_assignee, transition_to_status
 from app.utils.remote_links import add_remote_links, parse_remote_link
+from app.utils.sprints import CURRENT, move_to_sprint, resolve_sprint
 
 if TYPE_CHECKING:
-    from jira import Issue
+    from jira import JIRA, Issue
 
 app = typer.Typer(help="Create a specific ressource")
+console = Console()
+
+
+def _sprint_to_apply(jira: "JIRA", project: str, board: str | None, sprint: str | None) -> int | None:
+    """Resolve the sprint a new issue goes to, the active one being the default.
+
+    Only an explicit `--sprint` is worth failing on: a project without a scrum board or
+    without a running sprint must still be able to create issues, so the implicit default
+    only warns and leaves the issue in the backlog.
+    """
+    try:
+        return resolve_sprint(jira, project, board, sprint or CURRENT)
+    except CliJiraError as e:
+        if sprint:
+            raise
+        console.print(f"[yellow]Sprint non appliqué ({e}) : ticket créé dans le backlog.[/yellow]")
+        return None
 
 
 @app.command()
@@ -55,12 +75,21 @@ def issue(
         Optional[list[str]],
         typer.Option(help="External link to attach. Either an URL or 'Titre=https://...'. Repeatable."),
     ] = None,
+    sprint: Annotated[
+        Optional[str],
+        typer.Option(help="Sprint où placer le ticket : son nom, son id, ou 'current'. Par défaut le sprint actif."),
+    ] = None,
+    no_sprint: Annotated[bool, typer.Option("--no-sprint", help="Créer le ticket dans le backlog, hors sprint")] = False,
 ) -> None:
     """Create an issue.
+
+    The issue lands in the active sprint unless --sprint or --no-sprint says otherwise.
 
     Example: jira create issue <title> --labels <text>
     Example: jira create issue <title> --status 'EN COURS'
     Example: jira create issue <title> --link 'MR=https://gitlab.com/x/-/merge_requests/1'
+    Example: jira create issue <title> --sprint 'Sprint 42'
+    Example: jira create issue <title> --no-sprint
     """
     jira = ctx.obj.jira_client
 
@@ -74,6 +103,9 @@ def issue(
 
     issuetype = config.resolve(issuetype, "issue_type")
     project = config.resolve(project, "project")
+
+    # Resolved before creating anything, so an unknown sprint doesn't leave an issue behind.
+    sprint_id = None if no_sprint else _sprint_to_apply(jira, project, config.default.board, sprint)
 
     if not labels:
         labels = []
@@ -94,6 +126,9 @@ def issue(
     new_issue: Issue = jira.create_issue(fields=fields.to_jira())
 
     add_remote_links(jira, new_issue, remote_links)
+
+    if sprint_id is not None:
+        move_to_sprint(jira, new_issue, sprint_id)
 
     if status:
         transition_to_status(jira, new_issue, status)

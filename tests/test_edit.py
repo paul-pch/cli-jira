@@ -2,7 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, call
 
 from main import app
-from tests.conftest import make_issue, runner
+from tests.conftest import make_issue, make_sprint, runner, with_active_sprint
 
 
 def test_nothing_to_update(mock_jira_client: MagicMock) -> None:
@@ -318,6 +318,61 @@ def test_labels_are_cumulative(mock_jira_client: MagicMock) -> None:
         fields={},
         update={"labels": [{"add": "OPS"}, {"add": "Cycle11"}, {"remove": "Cycle10"}]},
     )
+
+
+def test_move_to_the_active_sprint(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.issue.return_value = make_issue(key="ST-1")
+    with_active_sprint(mock_jira_client, make_sprint(sprint_id=42))
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--sprint", "current"])
+
+    assert result.exit_code == 0
+    mock_jira_client.add_issues_to_sprint.assert_called_once_with(42, ["ST-1"])
+
+
+def test_sprint_resolved_on_the_project_of_the_issue(mock_jira_client: MagicMock) -> None:
+    """An edit may target an issue outside the configured project."""
+    mock_jira_client.issue.return_value = make_issue(key="OPS-1", project="OPS")
+    with_active_sprint(mock_jira_client)
+
+    result = runner.invoke(app, ["edit", "issue", "OPS-1", "--sprint", "current"])
+
+    assert result.exit_code == 0
+    mock_jira_client.boards.assert_called_once_with(projectKeyOrID="OPS", type="scrum", name=None)
+
+
+def test_sprint_alone_is_a_change(mock_jira_client: MagicMock) -> None:
+    """--sprint on its own must not trip the "nothing to update" guard."""
+    mock_jira_client.issue.return_value = make_issue(key="ST-1")
+    with_active_sprint(mock_jira_client)
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--sprint", "42"])
+
+    assert result.exit_code == 0
+    assert "aucune modification" not in result.output
+
+
+def test_other_edits_leave_the_sprint_alone(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--title", "Nouveau titre"])
+
+    assert result.exit_code == 0
+    mock_jira_client.boards.assert_not_called()
+    mock_jira_client.add_issues_to_sprint.assert_not_called()
+
+
+def test_unknown_sprint_reports_the_open_ones(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.issue.return_value = make_issue(key="ST-1")
+    with_active_sprint(mock_jira_client, make_sprint(name="Sprint 10"))
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--sprint", "Sprint 11"])
+
+    assert result.exit_code == 1
+    assert "sprint introuvable" in result.output
+    mock_jira_client.add_issues_to_sprint.assert_not_called()
 
 
 def test_estimate_only(mock_jira_client: MagicMock) -> None:

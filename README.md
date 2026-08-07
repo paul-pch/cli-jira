@@ -33,6 +33,34 @@ comme fermés, labels par défaut) se trouve dans un `config.toml`, cherché dan
 2. `~/.config/jira/config.toml`
 3. `/etc/jira/config.toml`
 
+Clé facultative `board` : le nom du tableau scrum servant à résoudre les sprints. Elle
+n'est utile que si plusieurs tableaux scrum couvrent le projet — sinon le tableau est
+déduit du projet.
+
+```toml
+[default]
+board = "ST Scrum"
+```
+
+### Sprints
+
+À la création, un ticket part **dans le sprint actif** par défaut :
+
+```bash
+jira create issue "Titre"                        # sprint actif
+jira create issue "Titre" --sprint 'Sprint 42'   # sprint nommé, ou son id
+jira create issue "Titre" --no-sprint            # backlog
+jira edit issue ST-1060 --sprint current         # déplacer un ticket existant
+```
+
+`--sprint` accepte un nom (insensible à la casse), un id numérique, ou `current` pour le
+sprint actif. Seuls les sprints ouverts (`active`, `future`) sont résolus : Jira refuse
+d'ajouter un ticket à un sprint clos.
+
+Sans sprint actif ni tableau scrum, la création n'échoue pas : le ticket reste dans le
+backlog avec un avertissement. Un `--sprint` explicite introuvable, lui, arrête la commande
+avant toute écriture.
+
 ## Usage
 
 After installation, you can run the application:

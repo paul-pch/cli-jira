@@ -36,10 +36,12 @@ def make_issue(
     timetracking: dict | None = None,
     issuelinks: list | None = None,
     comments: list | None = None,
+    project: str = "ST",
 ) -> SimpleNamespace:
     """Build a fake `jira.Issue` shaped exactly as `app/utils/display.py` expects it."""
     assignee = SimpleNamespace(displayName=assignee_name) if assignee_name else None
     fields = SimpleNamespace(
+        project=SimpleNamespace(key=project),
         summary=summary,
         status=SimpleNamespace(name=status),
         issuetype=SimpleNamespace(name=issuetype),
@@ -65,6 +67,24 @@ def make_comment(
         body=body,
         created=created,
     )
+
+
+def make_sprint(sprint_id: int = 42, name: str = "Sprint 10", state: str = "active") -> SimpleNamespace:
+    """Build a fake `jira.resources.Sprint`, shaped as `app/utils/sprints.py` reads it."""
+    return SimpleNamespace(id=sprint_id, name=name, state=state)
+
+
+def make_board(board_id: int = 7, name: str = "ST Scrum") -> SimpleNamespace:
+    """Build a fake `jira.resources.Board`, shaped as `app/utils/sprints.py` reads it."""
+    return SimpleNamespace(id=board_id, name=name)
+
+
+def with_active_sprint(client: MagicMock, sprint: SimpleNamespace | None = None) -> SimpleNamespace:
+    """Wire a client so sprint resolution finds one board and one running sprint."""
+    sprint = sprint or make_sprint()
+    client.boards.return_value = [make_board()]
+    client.sprints.return_value = [sprint]
+    return sprint
 
 
 def make_issue_link(relation: str = "blocks", other_key: str = "ST-2", *, outward: bool = True) -> SimpleNamespace:

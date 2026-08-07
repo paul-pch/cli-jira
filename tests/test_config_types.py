@@ -29,6 +29,12 @@ class TestDefaultConfig:
         assert default.project == "ST"
 
     @staticmethod
+    def test_board_is_optional() -> None:
+        """Existing config.toml files predate the key, so its absence must not be an error."""
+        assert DefaultConfig.from_toml(VALID_SECTION).board is None
+        assert DefaultConfig.from_toml({**VALID_SECTION, "board": "ST Scrum"}).board == "ST Scrum"
+
+    @staticmethod
     def test_from_toml_reports_every_missing_key() -> None:
         """A missing key used to surface as a raw KeyError in the middle of a command."""
         section = {k: v for k, v in VALID_SECTION.items() if k not in {"project", "labels"}}

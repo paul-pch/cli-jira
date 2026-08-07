@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, call
 
 from app.utils.issue_fields import ISSUE_FIELDS
 from main import app
-from tests.conftest import make_issue, runner
+from tests.conftest import make_issue, make_sprint, runner, with_active_sprint
 
 
 def test_issue_owned_by_default(mock_jira_client: MagicMock) -> None:
@@ -152,6 +152,67 @@ def test_issue_without_link_does_not_touch_remote_links(mock_jira_client: MagicM
     assert result.exit_code == 0
     mock_jira_client.add_simple_link.assert_not_called()
     mock_jira_client.remote_links.assert_not_called()
+
+
+def test_issue_goes_to_the_active_sprint_by_default(mock_jira_client: MagicMock) -> None:
+    created = make_issue(key="ST-42")
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = created
+    with_active_sprint(mock_jira_client, make_sprint(sprint_id=42))
+
+    result = runner.invoke(app, ["create", "issue", "Titre"])
+
+    assert result.exit_code == 0
+    mock_jira_client.add_issues_to_sprint.assert_called_once_with(42, ["ST-42"])
+
+
+def test_issue_with_a_named_sprint(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = make_issue(key="ST-42")
+    with_active_sprint(mock_jira_client, make_sprint(sprint_id=7, name="Sprint 11", state="future"))
+
+    result = runner.invoke(app, ["create", "issue", "Titre", "--sprint", "Sprint 11"])
+
+    assert result.exit_code == 0
+    mock_jira_client.add_issues_to_sprint.assert_called_once_with(7, ["ST-42"])
+
+
+def test_no_sprint_creates_in_the_backlog(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = make_issue()
+
+    result = runner.invoke(app, ["create", "issue", "Titre", "--no-sprint"])
+
+    assert result.exit_code == 0
+    mock_jira_client.boards.assert_not_called()
+    mock_jira_client.add_issues_to_sprint.assert_not_called()
+
+
+def test_issue_created_even_without_a_running_sprint(mock_jira_client: MagicMock) -> None:
+    """The implicit default must not block creation on a project that has no sprint."""
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = make_issue(key="ST-42")
+    mock_jira_client.boards.return_value = []
+
+    result = runner.invoke(app, ["create", "issue", "Titre"])
+
+    assert result.exit_code == 0
+    assert "backlog" in result.output
+    mock_jira_client.create_issue.assert_called_once()
+    mock_jira_client.add_issues_to_sprint.assert_not_called()
+
+
+def test_explicit_unknown_sprint_creates_nothing(mock_jira_client: MagicMock) -> None:
+    """An explicit --sprint is worth failing on, and is resolved before anything is written."""
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    with_active_sprint(mock_jira_client, make_sprint(name="Sprint 10"))
+
+    result = runner.invoke(app, ["create", "issue", "Titre", "--sprint", "Sprint 11"])
+
+    assert result.exit_code == 1
+    assert "sprint introuvable" in result.output
+    assert "Sprint 10" in result.output
+    mock_jira_client.create_issue.assert_not_called()
 
 
 def test_issue_with_estimate(mock_jira_client: MagicMock) -> None:
