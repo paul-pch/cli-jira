@@ -74,6 +74,14 @@ class ConflictingParentOptionsError(CliJiraError):
         super().__init__("--parent et --no-parent sont contradictoires")
 
 
+class DeletionCancelledError(CliJiraError):
+    """Raised when the user declines the deletion prompt."""
+
+    def __init__(self, key: str) -> None:
+        self.key = key
+        super().__init__(f"suppression de {key} annulée")
+
+
 class NothingToUpdateError(CliJiraError):
     """Raised when an edit command is called without any field to change."""
 

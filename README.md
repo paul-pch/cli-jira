@@ -55,7 +55,6 @@ Fonctionnalités en attente d'implémentation :
 
 ### Divers
 
-* [ ] DELETE - Supprimer un ticket
 * [ ] CLI - Complétion shell (zsh / bash)
 
 
