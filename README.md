@@ -43,20 +43,22 @@ jira get projects
 uv run python -m main get projects
 ```
 
-## Todo
+### Complétion shell
 
-Fonctionnalités en attente d'implémentation :
+La CLI fournit sa propre complétion (zsh, bash, fish, PowerShell) :
 
-### `edit`
+```bash
+make completion
+# équivalent à :
+jira --install-completion
+```
 
+La commande écrit le script de complétion et l'appelle depuis le fichier de
+configuration du shell courant ; rechargez le terminal ensuite. `jira --show-completion`
+affiche le script sans rien modifier, si vous préférez l'installer vous-même.
 
-### `get`
-
-
-### Divers
-
-* [ ] CLI - Complétion shell (zsh / bash)
-
+La complétion ne lit ni `config.toml` ni les variables d'environnement Jira : elle
+fonctionne même sans jeton configuré, et n'ouvre aucune connexion.
 
 ## Development
 
@@ -70,6 +72,7 @@ The project includes a Makefile, driven by `uv`, with the following targets:
 - `make validate`: Full gate before pushing — `lint-check` + `test`, same checks as CI
 - `make build`: Create standalone executable
 - `make integrate`: Add executable to PATH by modifying ~/.zshrc and reloading the shell configuration
+- `make completion`: Install shell completion for the current shell
 - `make upgrade`: Upgrade dependencies and refresh `uv.lock`
 - `make all`: Run install, test, build, and integrate targets
 - `make clean`: Remove the virtual environment and build artifacts

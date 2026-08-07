@@ -1,6 +1,6 @@
 # Python CLI Project Makefile — driven by uv (https://docs.astral.sh/uv/)
 
-.PHONY: all default install build integrate test lint lint-check format validate upgrade clean
+.PHONY: all default install build integrate completion test lint lint-check format validate upgrade clean
 
 default: install build integrate
 
@@ -10,8 +10,10 @@ install:
 	uv sync --locked
 	@echo "Dependencies installed"
 
+# shellingham loads its platform backend with importlib, which PyInstaller cannot see:
+# without --collect-submodules, --install-completion fails to detect the shell.
 build:
-	uv run pyinstaller --onefile --name=jira main.py
+	uv run pyinstaller --onefile --name=jira --collect-submodules shellingham main.py
 	@echo "Application built"
 
 integrate:
@@ -19,6 +21,13 @@ integrate:
 	cp -n config.toml ~/.config/jira/config.toml
 	grep -q '$(CURDIR)' ~/.zshrc || echo 'export PATH=$(CURDIR)/dist:$$PATH' >> ~/.zshrc
 	@echo "Application integrated into PATH"
+	@echo "-> Please reload your terminal"
+
+# Completion detects the shell by walking up the process tree, so the recipe must not
+# run under make's /bin/sh. The trailing `:` keeps $SHELL from exec'ing the binary in
+# place, which would leave /bin/sh as the visible parent.
+completion: build
+	@"$$SHELL" -c "$(CURDIR)/dist/jira --install-completion; :"
 	@echo "-> Please reload your terminal"
 
 test:
