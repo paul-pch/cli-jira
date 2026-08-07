@@ -6,6 +6,15 @@ from typing import Any
 ISSUE_FIELDS = "key,description,summary,issuetype,assignee,status,created,labels,timetracking,issuelinks,comment"
 
 
+def issue_fields(sprint_field: str | None = None) -> str:
+    """Fields to request for display, the sprint one added once its id is known.
+
+    The sprint lives in a custom field whose id changes per Jira instance, so it cannot sit
+    in the constant above.
+    """
+    return f"{ISSUE_FIELDS},{sprint_field}" if sprint_field else ISSUE_FIELDS
+
+
 def label_operations(add: list[str], remove: list[str]) -> dict[str, list[dict[str, str]]]:
     """Build the `update` verb payload for a partial label edit.
 

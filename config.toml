@@ -5,3 +5,4 @@ max_result = 50
 user = "admin"
 definition_closed = ["Terminé", "Livré", "Fermé(e)", "Validé", "Qualif OK", "VABF OK", "Rejeté"]
 labels = ["OPS", "Cycle10"]
+board = "Sprint OPs"

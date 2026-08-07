@@ -1,7 +1,51 @@
 from types import SimpleNamespace
 
 from app.utils.issue_view import UNASSIGNED, UNKNOWN_AUTHOR, IssueView
-from tests.conftest import make_comment, make_issue, make_issue_link
+from tests.conftest import SPRINT_FIELD, make_comment, make_issue, make_issue_link
+
+
+class TestSprint:
+    @staticmethod
+    def test_read_from_an_api_object() -> None:
+        issue = make_issue(sprint=[SimpleNamespace(id=42, name="Sprint 10", state="active")])
+
+        assert IssueView.from_issue(issue, SPRINT_FIELD).sprint == "Sprint 10"
+
+    @staticmethod
+    def test_read_from_a_dict() -> None:
+        issue = make_issue(sprint=[{"id": 42, "name": "Sprint 10"}])
+
+        assert IssueView.from_issue(issue, SPRINT_FIELD).sprint == "Sprint 10"
+
+    @staticmethod
+    def test_read_from_the_server_string_dump() -> None:
+        """Jira Server hands back the toString() of its Java object instead of a structure."""
+        raw = "com.atlassian.greenhopper.service.sprint.Sprint@1[id=42,name=Sprint 10,state=ACTIVE,rapidViewId=7]"
+        issue = make_issue(sprint=[raw])
+
+        assert IssueView.from_issue(issue, SPRINT_FIELD).sprint == "Sprint 10"
+
+    @staticmethod
+    def test_last_sprint_wins() -> None:
+        """The field keeps every sprint the issue went through, in order."""
+        issue = make_issue(
+            sprint=[
+                SimpleNamespace(name="Sprint 9", state="closed"),
+                SimpleNamespace(name="Sprint 10", state="active"),
+            ],
+        )
+
+        assert IssueView.from_issue(issue, SPRINT_FIELD).sprint == "Sprint 10"
+
+    @staticmethod
+    def test_issue_outside_any_sprint() -> None:
+        assert IssueView.from_issue(make_issue(sprint=[]), SPRINT_FIELD).sprint is None
+
+    @staticmethod
+    def test_no_sprint_field_on_the_instance() -> None:
+        issue = make_issue(sprint=[SimpleNamespace(name="Sprint 10")])
+
+        assert IssueView.from_issue(issue).sprint is None
 
 
 class TestIssueView:

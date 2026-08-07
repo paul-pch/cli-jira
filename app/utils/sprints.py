@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from jira import JIRA, Issue
@@ -7,6 +8,7 @@ from app.utils.exceptions import (
     AmbiguousSprintError,
     BoardNotFoundError,
     NoActiveSprintError,
+    SprintFieldNotFoundError,
     SprintNotFoundError,
 )
 
@@ -18,6 +20,33 @@ CURRENT = "current"
 
 # A closed sprint accepts no issue, so it is never a resolution candidate.
 OPEN_STATES = "active,future"
+
+# Marks the sprint field among the custom fields of any Jira instance.
+SPRINT_FIELD_SCHEMA = "com.pyxis.greenhopper.jira:gh-sprint"
+
+
+@lru_cache(maxsize=1)
+def sprint_field(jira: JIRA, configured: str | None = None) -> str | None:
+    """Locate the sprint custom field id of this Jira instance (`customfield_10020`-ish).
+
+    Reading a sprint back needs that id, which differs from one instance to the next. It costs
+    one `fields()` call, cached for the lifetime of the process and skipped entirely when
+    `sprint_field` is pinned in config.toml. None means the instance exposes no sprint field.
+    """
+    if configured:
+        return configured
+
+    return next((f["id"] for f in jira.fields() if f.get("schema", {}).get("custom") == SPRINT_FIELD_SCHEMA), None)
+
+
+def require_sprint_field(jira: JIRA, configured: str | None = None) -> str:
+    """Locate the sprint custom field id, for the writes that cannot fall back on hiding the sprint."""
+    field = sprint_field(jira, configured)
+
+    if field is None:
+        raise SprintFieldNotFoundError
+
+    return field
 
 
 def resolve_board(jira: JIRA, project: str, board: str | None) -> int:

@@ -24,8 +24,8 @@ def default_table() -> Table:
     )
 
 
-def display_issue(issue: Issue, remote_links: list[Any] | None = None) -> None:
-    view = IssueView.from_issue(issue)
+def display_issue(issue: Issue, remote_links: list[Any] | None = None, sprint_field: str | None = None) -> None:
+    view = IssueView.from_issue(issue, sprint_field)
 
     meta = Table(box=box.SIMPLE, show_header=False, padding=(0, 0))
     meta.add_column(style="bold cyan")
@@ -37,6 +37,8 @@ def display_issue(issue: Issue, remote_links: list[Any] | None = None) -> None:
     meta.add_row("Assignee", view.assignee)
     meta.add_row("Labels", ", ".join(f'"{label}"' for label in view.labels))
     meta.add_row("Created", view.created)
+    if view.sprint:
+        meta.add_row("Sprint", view.sprint)
     if view.estimate:
         meta.add_row("Estimate", view.estimate)
     if view.time_spent:

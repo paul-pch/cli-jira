@@ -57,3 +57,12 @@ class TestBuildIssuesJql:
     @staticmethod
     def test_project_is_quoted() -> None:
         assert build(project="ST").startswith('project = "ST"')
+
+    @staticmethod
+    def test_sprint_filter_uses_the_id() -> None:
+        """Sprint names are not unique across boards, ids are."""
+        assert "sprint = 42" in build(sprint_id=42)
+
+    @staticmethod
+    def test_no_sprint_clause_by_default() -> None:
+        assert "sprint" not in build()

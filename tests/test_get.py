@@ -3,9 +3,17 @@ from unittest.mock import MagicMock
 
 from jira.client import ResultList
 
-from app.utils.issue_fields import ISSUE_FIELDS
+from app.utils.issue_fields import ISSUE_FIELDS, issue_fields
 from main import app
-from tests.conftest import make_comment, make_issue, runner
+from tests.conftest import (
+    SPRINT_FIELD,
+    make_comment,
+    make_issue,
+    make_sprint,
+    runner,
+    with_active_sprint,
+    with_sprint_field,
+)
 
 
 def test_projects(mock_jira_client: MagicMock) -> None:
@@ -31,6 +39,30 @@ def test_issue(mock_jira_client: MagicMock) -> None:
     assert "ST-1060" in result.output
     assert "Titre du ticket" in result.output
     mock_jira_client.issue.assert_called_once_with("ST-1060", fields=ISSUE_FIELDS)
+
+
+def test_issue_shows_its_sprint(mock_jira_client: MagicMock) -> None:
+    with_sprint_field(mock_jira_client)
+    mock_jira_client.issue.return_value = make_issue(sprint=[SimpleNamespace(name="Sprint 10", state="active")])
+    mock_jira_client.remote_links.return_value = []
+
+    result = runner.invoke(app, ["get", "issue", "ST-1"])
+
+    assert result.exit_code == 0
+    assert "Sprint 10" in result.output
+    mock_jira_client.issue.assert_called_once_with("ST-1", fields=issue_fields(SPRINT_FIELD))
+
+
+def test_issue_without_a_sprint_field_on_the_instance(mock_jira_client: MagicMock) -> None:
+    """No sprint field, no sprint column, and the plain field list is requested."""
+    mock_jira_client.fields.return_value = [{"id": "summary"}]
+    mock_jira_client.issue.return_value = make_issue()
+    mock_jira_client.remote_links.return_value = []
+
+    result = runner.invoke(app, ["get", "issue", "ST-1"])
+
+    assert result.exit_code == 0
+    mock_jira_client.issue.assert_called_once_with("ST-1", fields=ISSUE_FIELDS)
 
 
 def test_issue_shows_its_comments(mock_jira_client: MagicMock) -> None:
@@ -137,6 +169,55 @@ def test_raw_jql_conflicts_with_the_filter_options(mock_jira_client: MagicMock) 
     assert result.exit_code == 1
     assert "--jql" in result.output
     mock_jira_client.search_issues.assert_not_called()
+
+
+def test_issues_filtered_by_sprint(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.search_issues.return_value = [make_issue(key="ST-1")]
+    with_active_sprint(mock_jira_client, make_sprint(sprint_id=42))
+
+    result = runner.invoke(app, ["get", "issues", "--sprint", "current"])
+
+    assert result.exit_code == 0
+    assert "sprint = 42" in mock_jira_client.search_issues.call_args[0][0]
+
+
+def test_sprint_filter_conflicts_with_raw_jql(mock_jira_client: MagicMock) -> None:
+    result = runner.invoke(app, ["get", "issues", "--jql", "labels = OPS", "--sprint", "current"])
+
+    assert result.exit_code == 1
+    assert "--jql" in result.output
+    mock_jira_client.search_issues.assert_not_called()
+
+
+def test_sprints_lists_the_board_sprints(mock_jira_client: MagicMock) -> None:
+    with_active_sprint(mock_jira_client, make_sprint(sprint_id=42, name="Sprint 10"))
+
+    result = runner.invoke(app, ["get", "sprints"])
+
+    assert result.exit_code == 0
+    assert "Sprint 10" in result.output
+    assert "42" in result.output
+    mock_jira_client.boards.assert_called_once_with(projectKeyOrID="ST", type="scrum", name=None)
+    mock_jira_client.sprints.assert_called_once_with(7, state="active,future")
+
+
+def test_sprints_with_an_explicit_state(mock_jira_client: MagicMock) -> None:
+    """Closed sprints are listed on demand: their id is the only way to filter on them."""
+    with_active_sprint(mock_jira_client, make_sprint(name="Sprint 9", state="closed"))
+
+    result = runner.invoke(app, ["get", "sprints", "--state", "closed"])
+
+    assert result.exit_code == 0
+    mock_jira_client.sprints.assert_called_once_with(7, state="closed")
+
+
+def test_sprints_without_a_board(mock_jira_client: MagicMock) -> None:
+    mock_jira_client.boards.return_value = []
+
+    result = runner.invoke(app, ["get", "sprints"])
+
+    assert result.exit_code == 1
+    assert "tableau scrum" in result.output
 
 
 def test_issues_more_to_come_suggests_the_next_page(mock_jira_client: MagicMock) -> None:

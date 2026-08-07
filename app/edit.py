@@ -5,10 +5,10 @@ import typer
 
 from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
-from app.utils.exceptions import ConflictingParentOptionsError, NothingToUpdateError
-from app.utils.issue_fields import ISSUE_FIELDS, IssueFields, label_operations
+from app.utils.exceptions import ConflictingParentOptionsError, ConflictingSprintOptionsError, NothingToUpdateError
+from app.utils.issue_fields import IssueFields, issue_fields, label_operations
 from app.utils.jira import link_issues, resolve_assignee, transition_to_status
-from app.utils.sprints import move_to_sprint, resolve_sprint
+from app.utils.sprints import move_to_sprint, require_sprint_field, resolve_sprint, sprint_field
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -67,6 +67,7 @@ def issue(
         Optional[str],
         typer.Option(help="Sprint où déplacer le ticket : son nom, son id, ou 'current' pour le sprint actif."),
     ] = None,
+    no_sprint: Annotated[bool, typer.Option("--no-sprint", help="Sortir le ticket de son sprint, vers le backlog")] = False,
 ) -> None:
     """Edit an issue.
 
@@ -79,6 +80,7 @@ def issue(
     Example: jira edit issue ST-1060 --worklog 2h
     Example: jira edit issue ST-1060 --link-type blocks --link-issue ST-1061
     Example: jira edit issue ST-1060 --sprint current
+    Example: jira edit issue ST-1060 --no-sprint
     """
     changes = [
         title,
@@ -95,11 +97,14 @@ def issue(
         sprint,
     ]
 
-    if not any([*changes, parent, no_parent, link_issue]):
+    if not any([*changes, parent, no_parent, link_issue, no_sprint]):
         raise NothingToUpdateError
 
     if parent and no_parent:
         raise ConflictingParentOptionsError
+
+    if sprint and no_sprint:
+        raise ConflictingSprintOptionsError
 
     jira = ctx.obj.jira_client
 
@@ -125,6 +130,11 @@ def issue(
     # for a detach is set here rather than through the builder.
     if no_parent:
         fields["parent"] = None
+
+    # The agile API only adds to a sprint; leaving one means nulling the custom field.
+    if no_sprint:
+        fields[require_sprint_field(jira, ctx.obj.config.default.sprint_field)] = None
+
     operations = label_operations(labels or [], remove_labels or [])
 
     if fields or operations:
@@ -145,6 +155,7 @@ def issue(
         project = getattr(getattr(issue.fields, "project", None), "key", None) or ctx.obj.config.default.project
         move_to_sprint(jira, issue, resolve_sprint(jira, project, ctx.obj.config.default.board, sprint))
 
-    issue = jira.issue(key, fields=ISSUE_FIELDS)
+    field = sprint_field(jira, ctx.obj.config.default.sprint_field)
+    issue = jira.issue(key, fields=issue_fields(field))
 
-    display.display_issue(issue)
+    display.display_issue(issue, sprint_field=field)

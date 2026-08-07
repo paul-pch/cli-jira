@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -5,6 +6,9 @@ from jira import Issue
 
 UNASSIGNED = "Non assigné"
 UNKNOWN_AUTHOR = "Auteur inconnu"
+
+# Jira Server returns the sprint as the toString() dump of its Java object.
+_SPRINT_NAME_RE = re.compile(r"name=([^,\]]+)")
 
 
 def _timetracking(timetracking: Any, *keys: str) -> str | None:  # noqa: ANN401
@@ -43,6 +47,29 @@ def _links(issuelinks: Any) -> list[tuple[str, str]]:  # noqa: ANN401
     return relations
 
 
+def _sprint(sprints: Any) -> str | None:  # noqa: ANN401
+    """Read the sprint name out of the custom field.
+
+    An issue carries every sprint it went through, the last entry being the current one.
+    Jira Cloud returns objects (or dicts), Server a plain string to parse.
+    """
+    if not sprints:
+        return None
+
+    latest = list(sprints)[-1]
+
+    if isinstance(latest, dict):
+        return latest.get("name")
+
+    name = getattr(latest, "name", None)
+    if name:
+        return str(name)
+
+    match = _SPRINT_NAME_RE.search(str(latest))
+
+    return match.group(1) if match else None
+
+
 @dataclass(frozen=True, slots=True)
 class CommentView:
     author: str
@@ -79,9 +106,11 @@ class IssueView:
     remaining_estimate: str | None
     links: list[tuple[str, str]]
     comments: list[CommentView]
+    sprint: str | None = None
 
     @classmethod
-    def from_issue(cls, issue: Issue) -> "IssueView":
+    def from_issue(cls, issue: Issue, sprint_field: str | None = None) -> "IssueView":
+        """Normalise an issue for display; the sprint stays None until its field id is known."""
         fields = issue.fields
         assignee = getattr(fields, "assignee", None)
         created = getattr(fields, "created", None) or ""
@@ -101,4 +130,5 @@ class IssueView:
             remaining_estimate=_timetracking(timetracking, "remainingEstimate"),
             links=_links(getattr(fields, "issuelinks", None)),
             comments=_comments(getattr(fields, "comment", None)),
+            sprint=_sprint(getattr(fields, sprint_field, None)) if sprint_field else None,
         )

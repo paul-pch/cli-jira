@@ -8,10 +8,11 @@ from app.utils.exceptions import (
     AmbiguousSprintError,
     BoardNotFoundError,
     NoActiveSprintError,
+    SprintFieldNotFoundError,
     SprintNotFoundError,
 )
-from app.utils.sprints import move_to_sprint, resolve_board, resolve_sprint
-from tests.conftest import make_board, make_issue, make_sprint
+from app.utils.sprints import move_to_sprint, require_sprint_field, resolve_board, resolve_sprint, sprint_field
+from tests.conftest import SPRINT_FIELD, make_board, make_issue, make_sprint, with_sprint_field
 
 SPRINT_ID = 42
 OTHER_SPRINT_ID = 2
@@ -20,6 +21,7 @@ BOARD_ID = 7
 
 @pytest.fixture
 def jira_client() -> MagicMock:
+    sprint_field.cache_clear()
     return MagicMock(spec=JIRA)
 
 
@@ -95,6 +97,35 @@ def test_several_boards_ask_for_the_config_key(jira_client: MagicMock) -> None:
 
     with pytest.raises(AmbiguousBoardError, match="config.toml"):
         resolve_board(jira_client, "ST", None)
+
+
+def test_sprint_field_discovered_by_its_schema(jira_client: MagicMock) -> None:
+    with_sprint_field(jira_client)
+
+    assert sprint_field(jira_client) == SPRINT_FIELD
+
+
+def test_sprint_field_is_looked_up_once(jira_client: MagicMock) -> None:
+    """Both the fetch and the rendering ask for it, and it never changes for a given client."""
+    with_sprint_field(jira_client)
+
+    assert sprint_field(jira_client) == sprint_field(jira_client)
+    jira_client.fields.assert_called_once()
+
+
+def test_configured_sprint_field_skips_the_lookup(jira_client: MagicMock) -> None:
+    assert sprint_field(jira_client, "customfield_99") == "customfield_99"
+
+    jira_client.fields.assert_not_called()
+
+
+def test_sprint_field_absent(jira_client: MagicMock) -> None:
+    jira_client.fields.return_value = [{"id": "summary"}]
+
+    assert sprint_field(jira_client) is None
+
+    with pytest.raises(SprintFieldNotFoundError, match="config.toml"):
+        require_sprint_field(jira_client)
 
 
 def test_move_to_sprint(jira_client: MagicMock) -> None:

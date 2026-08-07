@@ -15,6 +15,7 @@ def build_issues_jql(
     all_users: bool,
     statuses: list[str],
     closed_statuses: list[str],
+    sprint_id: int | None = None,
 ) -> str:
     """Build the JQL behind `get issues`.
 
@@ -27,6 +28,10 @@ def build_issues_jql(
         conditions.append(f"assignee = {quote(assignee_id)}")
     elif not all_users:
         conditions.append("assignee = currentUser()")
+
+    # An id, so no quoting: JQL matches sprints by id or by name, and names are not unique.
+    if sprint_id is not None:
+        conditions.append(f"sprint = {sprint_id}")
 
     if statuses:
         conditions.append(f"status in ({', '.join(quote(status) for status in statuses)})")

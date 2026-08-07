@@ -1,8 +1,9 @@
+from types import SimpleNamespace
 from unittest.mock import MagicMock, call
 
-from app.utils.issue_fields import ISSUE_FIELDS
+from app.utils.issue_fields import ISSUE_FIELDS, issue_fields
 from main import app
-from tests.conftest import make_issue, make_sprint, runner, with_active_sprint
+from tests.conftest import SPRINT_FIELD, make_issue, make_sprint, runner, with_active_sprint, with_sprint_field
 
 
 def test_issue_owned_by_default(mock_jira_client: MagicMock) -> None:
@@ -158,6 +159,7 @@ def test_issue_goes_to_the_active_sprint_by_default(mock_jira_client: MagicMock)
     created = make_issue(key="ST-42")
     mock_jira_client.myself.return_value = {"accountId": "acc-me"}
     mock_jira_client.create_issue.return_value = created
+    mock_jira_client.issue.return_value = created
     with_active_sprint(mock_jira_client, make_sprint(sprint_id=42))
 
     result = runner.invoke(app, ["create", "issue", "Titre"])
@@ -166,9 +168,26 @@ def test_issue_goes_to_the_active_sprint_by_default(mock_jira_client: MagicMock)
     mock_jira_client.add_issues_to_sprint.assert_called_once_with(42, ["ST-42"])
 
 
-def test_issue_with_a_named_sprint(mock_jira_client: MagicMock) -> None:
+def test_issue_refetched_to_show_the_sprint_it_landed_in(mock_jira_client: MagicMock) -> None:
+    """The sprint is applied after creation, so what `create_issue` returned is already stale."""
     mock_jira_client.myself.return_value = {"accountId": "acc-me"}
     mock_jira_client.create_issue.return_value = make_issue(key="ST-42")
+    mock_jira_client.issue.return_value = make_issue(key="ST-42", sprint=[SimpleNamespace(name="Sprint 10")])
+    with_active_sprint(mock_jira_client)
+    with_sprint_field(mock_jira_client)
+
+    result = runner.invoke(app, ["create", "issue", "Titre"])
+
+    assert result.exit_code == 0
+    assert "Sprint 10" in result.output
+    mock_jira_client.issue.assert_called_once_with("ST-42", fields=issue_fields(SPRINT_FIELD))
+
+
+def test_issue_with_a_named_sprint(mock_jira_client: MagicMock) -> None:
+    created = make_issue(key="ST-42")
+    mock_jira_client.myself.return_value = {"accountId": "acc-me"}
+    mock_jira_client.create_issue.return_value = created
+    mock_jira_client.issue.return_value = created
     with_active_sprint(mock_jira_client, make_sprint(sprint_id=7, name="Sprint 11", state="future"))
 
     result = runner.invoke(app, ["create", "issue", "Titre", "--sprint", "Sprint 11"])

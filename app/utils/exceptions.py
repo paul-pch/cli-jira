@@ -118,6 +118,23 @@ class NoActiveSprintError(CliJiraError):
         super().__init__(f"aucun sprint actif sur le projet {project}")
 
 
+class SprintFieldNotFoundError(CliJiraError):
+    """Raised when the sprint custom field can't be located on this Jira instance."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "champ sprint introuvable sur cette instance Jira. Renseignez `sprint_field` dans config.toml "
+            "(son id, de la forme customfield_10020)"
+        )
+
+
+class ConflictingSprintOptionsError(CliJiraError):
+    """Raised when joining and leaving a sprint are asked for at once."""
+
+    def __init__(self) -> None:
+        super().__init__("--sprint et --no-sprint sont contradictoires")
+
+
 class BoardNotFoundError(CliJiraError):
     """Raised when no scrum board serves the project."""
 

@@ -6,9 +6,10 @@ from rich.console import Console
 from app.utils import display
 from app.utils.errors import handle_jira_errors
 from app.utils.exceptions import ConflictingJqlOptionsError, UserNotFoundError
-from app.utils.issue_fields import ISSUE_FIELDS
+from app.utils.issue_fields import issue_fields
 from app.utils.jira import get_statuses_for_issue_type, get_transitions_from_issue, resolve_assignee
 from app.utils.jql import build_issues_jql
+from app.utils.sprints import OPEN_STATES, resolve_board, resolve_sprint, sprint_field
 
 if TYPE_CHECKING:
     from jira import Issue
@@ -25,11 +26,12 @@ def issue(ctx: typer.Context, issue_key: Annotated[str, typer.Argument(help="The
     Example: jira get issue ST-1060
     """
     jira = ctx.obj.jira_client
+    field = sprint_field(jira, ctx.obj.config.default.sprint_field)
 
-    issue: Issue = jira.issue(issue_key, fields=ISSUE_FIELDS)
+    issue: Issue = jira.issue(issue_key, fields=issue_fields(field))
     remote_links = jira.remote_links(issue_key)
 
-    display.display_issue(issue, remote_links)
+    display.display_issue(issue, remote_links, sprint_field=field)
 
 
 @app.command()
@@ -60,6 +62,10 @@ def issues(
         typer.Option(help="Nombre maximum de tickets à afficher. Par défaut max_result de config.toml."),
     ] = None,
     start: Annotated[int, typer.Option(help="Index du premier ticket à afficher (pagination).")] = 0,
+    sprint: Annotated[
+        Optional[str],
+        typer.Option(help="Ne garder que les tickets de ce sprint : son nom, son id, ou 'current'."),
+    ] = None,
 ) -> None:
     """List issues.
 
@@ -67,10 +73,11 @@ def issues(
     Example: jira get issues --all
     Example: jira get issues --project ST --status 'EN COURS'
     Example: jira get issues --assignee michel
+    Example: jira get issues --sprint current
     Example: jira get issues --jql 'project = ST AND labels = OPS ORDER BY created DESC'
     Example: jira get issues --limit 10 --start 10
     """
-    if jql and any([project, status, assignee, all_users]):
+    if jql and any([project, status, assignee, all_users, sprint]):
         raise ConflictingJqlOptionsError
 
     jira = ctx.obj.jira_client
@@ -78,13 +85,15 @@ def issues(
     if not jql:
         # Resolved to an account id: on Jira Cloud, JQL doesn't match users by name.
         assignee_account = resolve_assignee(jira, owned=False, owner=assignee)
+        project = ctx.obj.config.resolve(project, "project")
 
         jql = build_issues_jql(
-            ctx.obj.config.resolve(project, "project"),
+            project,
             assignee_id=assignee_account["id"] if assignee_account else None,
             all_users=all_users,
             statuses=status or [],
             closed_statuses=ctx.obj.config.default.definition_closed,
+            sprint_id=resolve_sprint(jira, project, ctx.obj.config.default.board, sprint) if sprint else None,
         )
 
     issues: list[Issue] = jira.search_issues(
@@ -152,6 +161,39 @@ def status(
 
     issue: Issue = jira.issue(issue_key)
     display.display_tuples(columns=[issue.fields.issuetype.name], rows=[(t,) for t in get_transitions_from_issue(jira, issue)])
+
+
+@app.command()
+@handle_jira_errors
+def sprints(
+    ctx: typer.Context,
+    project: Annotated[
+        Optional[str],
+        typer.Option(help="Code du projet. Par défaut celui de config.toml."),
+    ] = None,
+    board: Annotated[
+        Optional[str],
+        typer.Option(help="Nom du tableau scrum. Par défaut celui de config.toml, sinon le seul du projet."),
+    ] = None,
+    state: Annotated[
+        str,
+        typer.Option(help="États à lister, séparés par des virgules : active, future, closed."),
+    ] = OPEN_STATES,
+) -> None:
+    """List the sprints of the project's scrum board.
+
+    Example: jira get sprints
+    Example: jira get sprints --state closed
+    """
+    jira = ctx.obj.jira_client
+    project = ctx.obj.config.resolve(project, "project")
+
+    board_id = resolve_board(jira, project, ctx.obj.config.resolve(board, "board"))
+
+    display.display_tuples(
+        columns=["Id", "Nom", "État"],
+        rows=[(str(s.id), s.name, s.state) for s in jira.sprints(board_id, state=state)],
+    )
 
 
 @app.command()

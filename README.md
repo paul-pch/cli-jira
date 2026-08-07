@@ -33,14 +33,19 @@ comme fermés, labels par défaut) se trouve dans un `config.toml`, cherché dan
 2. `~/.config/jira/config.toml`
 3. `/etc/jira/config.toml`
 
-Clé facultative `board` : le nom du tableau scrum servant à résoudre les sprints. Elle
-n'est utile que si plusieurs tableaux scrum couvrent le projet — sinon le tableau est
-déduit du projet.
+Deux clés facultatives concernent les sprints :
 
 ```toml
 [default]
-board = "ST Scrum"
+board = "ST Scrum"                # utile seulement si plusieurs tableaux scrum couvrent le projet
+sprint_field = "customfield_10020" # évite la découverte automatique du champ sprint
 ```
+
+`board` sert à résoudre les sprints ; sans elle, le tableau est déduit du projet.
+`sprint_field` est l'id du champ personnalisé portant le sprint : il diffère d'une instance
+Jira à l'autre, donc la CLI le découvre via un appel à `fields()`. Le renseigner supprime
+cet appel. Si la découverte échoue, le sprint n'est simplement pas affiché — seul
+`jira edit issue --no-sprint`, qui doit écrire dans ce champ, s'arrête avec une erreur.
 
 ### Sprints
 
@@ -51,11 +56,18 @@ jira create issue "Titre"                        # sprint actif
 jira create issue "Titre" --sprint 'Sprint 42'   # sprint nommé, ou son id
 jira create issue "Titre" --no-sprint            # backlog
 jira edit issue ST-1060 --sprint current         # déplacer un ticket existant
+jira edit issue ST-1060 --no-sprint              # renvoyer au backlog
+jira get sprints                                 # sprints ouverts du tableau, avec leur id
+jira get sprints --state closed                  # sprints clos
+jira get issues --sprint current                 # filtrer les tickets sur un sprint
 ```
 
 `--sprint` accepte un nom (insensible à la casse), un id numérique, ou `current` pour le
-sprint actif. Seuls les sprints ouverts (`active`, `future`) sont résolus : Jira refuse
-d'ajouter un ticket à un sprint clos.
+sprint actif. Seuls les sprints ouverts (`active`, `future`) sont résolus par leur nom :
+Jira refuse d'ajouter un ticket à un sprint clos. Pour filtrer sur un sprint clos, passez
+son id, que `jira get sprints --state closed` affiche.
+
+Le sprint courant d'un ticket apparaît dans `jira get issue`.
 
 Sans sprint actif ni tableau scrum, la création n'échoue pas : le ticket reste dans le
 backlog avec un avertissement. Un `--sprint` explicite introuvable, lui, arrête la commande

@@ -15,6 +15,7 @@ class DefaultConfig:
     definition_closed: list[str]
     labels: list[str]
     board: str | None = None  # only needed when several scrum boards serve the project
+    sprint_field: str | None = None  # pin the sprint custom field id to skip its discovery
 
     @classmethod
     def from_toml(cls, section: dict[str, Any]) -> "DefaultConfig":

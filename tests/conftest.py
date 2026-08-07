@@ -5,7 +5,11 @@ import pytest
 from jira import JIRA
 from typer.testing import CliRunner
 
+from app.utils.sprints import SPRINT_FIELD_SCHEMA, sprint_field
+
 runner = CliRunner()
+
+SPRINT_FIELD = "customfield_10020"
 
 
 @pytest.fixture
@@ -21,6 +25,8 @@ def mock_jira_client(request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyP
     request.getfixturevalue("jira_env")
     client = MagicMock(spec=JIRA)
     monkeypatch.setattr("app.utils.jira.get_jira_client", lambda _env_vars: client)
+    # The sprint field id is memoized per client; a leftover entry would leak across tests.
+    sprint_field.cache_clear()
     return client
 
 
@@ -37,10 +43,12 @@ def make_issue(
     issuelinks: list | None = None,
     comments: list | None = None,
     project: str = "ST",
+    sprint: list | None = None,
 ) -> SimpleNamespace:
     """Build a fake `jira.Issue` shaped exactly as `app/utils/display.py` expects it."""
     assignee = SimpleNamespace(displayName=assignee_name) if assignee_name else None
     fields = SimpleNamespace(
+        **{SPRINT_FIELD: sprint},
         project=SimpleNamespace(key=project),
         summary=summary,
         status=SimpleNamespace(name=status),
@@ -77,6 +85,16 @@ def make_sprint(sprint_id: int = 42, name: str = "Sprint 10", state: str = "acti
 def make_board(board_id: int = 7, name: str = "ST Scrum") -> SimpleNamespace:
     """Build a fake `jira.resources.Board`, shaped as `app/utils/sprints.py` reads it."""
     return SimpleNamespace(id=board_id, name=name)
+
+
+def with_sprint_field(client: MagicMock, field: str = SPRINT_FIELD) -> str:
+    """Wire `jira.fields()` so the sprint custom field is discoverable."""
+    client.fields.return_value = [
+        {"id": "customfield_10001", "schema": {"custom": "com.pyxis.greenhopper.jira:gh-lexo-rank"}},
+        {"id": field, "schema": {"custom": SPRINT_FIELD_SCHEMA}},
+        {"id": "summary"},
+    ]
+    return field
 
 
 def with_active_sprint(client: MagicMock, sprint: SimpleNamespace | None = None) -> SimpleNamespace:

@@ -7,10 +7,10 @@ from rich.console import Console
 from app.utils import display, utils
 from app.utils.errors import handle_jira_errors
 from app.utils.exceptions import CliJiraError
-from app.utils.issue_fields import ISSUE_FIELDS, IssueFields
+from app.utils.issue_fields import IssueFields, issue_fields
 from app.utils.jira import resolve_assignee, transition_to_status
 from app.utils.remote_links import add_remote_links, parse_remote_link
-from app.utils.sprints import CURRENT, move_to_sprint, resolve_sprint
+from app.utils.sprints import CURRENT, move_to_sprint, resolve_sprint, sprint_field
 
 if TYPE_CHECKING:
     from jira import JIRA, Issue
@@ -130,8 +130,17 @@ def issue(
     if sprint_id is not None:
         move_to_sprint(jira, new_issue, sprint_id)
 
-    if status:
-        transition_to_status(jira, new_issue, status)
-        new_issue = jira.issue(new_issue.key, fields=ISSUE_FIELDS)
+    field = sprint_field(jira, config.default.sprint_field) if sprint_id is not None else None
 
-    display.display_issue(new_issue, remote_links=jira.remote_links(new_issue.key) if remote_links else None)
+    # The sprint and the status are both applied after creation: what `create_issue` returned
+    # no longer reflects the issue.
+    if status or sprint_id is not None:
+        if status:
+            transition_to_status(jira, new_issue, status)
+        new_issue = jira.issue(new_issue.key, fields=issue_fields(field))
+
+    display.display_issue(
+        new_issue,
+        remote_links=jira.remote_links(new_issue.key) if remote_links else None,
+        sprint_field=field,
+    )

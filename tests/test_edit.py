@@ -2,7 +2,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, call
 
 from main import app
-from tests.conftest import make_issue, make_sprint, runner, with_active_sprint
+from tests.conftest import SPRINT_FIELD, make_issue, make_sprint, runner, with_active_sprint, with_sprint_field
 
 
 def test_nothing_to_update(mock_jira_client: MagicMock) -> None:
@@ -362,6 +362,41 @@ def test_other_edits_leave_the_sprint_alone(mock_jira_client: MagicMock) -> None
     assert result.exit_code == 0
     mock_jira_client.boards.assert_not_called()
     mock_jira_client.add_issues_to_sprint.assert_not_called()
+
+
+def test_no_sprint_sends_the_issue_back_to_the_backlog(mock_jira_client: MagicMock) -> None:
+    """The agile API only adds to a sprint, so leaving one nulls the custom field."""
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+    with_sprint_field(mock_jira_client)
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--no-sprint"])
+
+    assert result.exit_code == 0
+    issue.update.assert_called_once_with(fields={SPRINT_FIELD: None}, update={})
+    mock_jira_client.add_issues_to_sprint.assert_not_called()
+
+
+def test_no_sprint_without_a_sprint_field(mock_jira_client: MagicMock) -> None:
+    issue = make_issue(key="ST-1")
+    issue.update = MagicMock(return_value=True)
+    mock_jira_client.issue.return_value = issue
+    mock_jira_client.fields.return_value = [{"id": "summary"}]
+
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--no-sprint"])
+
+    assert result.exit_code == 1
+    assert "champ sprint introuvable" in result.output
+    issue.update.assert_not_called()
+
+
+def test_sprint_and_no_sprint_conflict(mock_jira_client: MagicMock) -> None:
+    result = runner.invoke(app, ["edit", "issue", "ST-1", "--sprint", "42", "--no-sprint"])
+
+    assert result.exit_code == 1
+    assert "contradictoires" in result.output
+    mock_jira_client.issue.assert_not_called()
 
 
 def test_unknown_sprint_reports_the_open_ones(mock_jira_client: MagicMock) -> None:
